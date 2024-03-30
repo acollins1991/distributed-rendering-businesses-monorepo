@@ -1,0 +1,12 @@
+{
+  "name": "distributed-rendering-businesses-monorepo",
+  "workspaces": [
+    "packages/*"
+  ],
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

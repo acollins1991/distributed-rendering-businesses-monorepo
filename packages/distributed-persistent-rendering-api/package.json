@@ -1,0 +1,6 @@
+{
+  "name": "distributed-persistent-rendering-api",
+  "module": "index.ts",
+  "type": "module",
+  "devDependencies": {}
+}
