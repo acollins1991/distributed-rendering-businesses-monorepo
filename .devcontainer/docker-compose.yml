@@ -22,7 +22,8 @@ services:
     ports:
       # Map the port so you can access the API from the host machine
       - 4566:4566
-    volumes:
-      # Here you mount your setup file so it will be executed
-      # when the container starts
-      - ./localstack-setup.sh:/etc/localstack/init/ready.d/script.sh
+    # volumes:
+    #   # Here you mount your setup file so it will be executed
+    #   # when the container starts
+    #   - ./localstack-setup.sh:/etc/localstack/init/ready.d/script.sh
+    #   - ./friendly-sites-table-schema.json:/etc/friendly-sites-table-schema.json
