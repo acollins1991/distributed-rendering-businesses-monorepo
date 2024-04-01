@@ -1,0 +1,28 @@
+version: '3.8'
+services:
+
+  devcontainer:
+    restart: unless-stopped
+    # depends_on:
+    #   - localstack
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ../..:/workspaces:cached
+    command: /bin/sh -c "while sleep 1000; do :; done"
+    environment:
+      AWS_ACCESS_KEY_ID: 'DUMMYIDEXAMPLE'
+      AWS_SECRET_ACCESS_KEY: 'DUMMYEXAMPLEKEY'
+      REGION: 'eu-west-1'
+
+  localstack:
+    # LocalStack container
+    image: localstack/localstack:latest
+    ports:
+      # Map the port so you can access the API from the host machine
+      - 4566:4566
+    volumes:
+      # Here you mount your setup file so it will be executed
+      # when the container starts
+      - ./localstack-setup.sh:/etc/localstack/init/ready.d/script.sh

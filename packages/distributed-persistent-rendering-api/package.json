@@ -2,5 +2,11 @@
   "name": "distributed-persistent-rendering-api",
   "module": "index.ts",
   "type": "module",
-  "devDependencies": {}
+  "devDependencies": {},
+  "dependencies": {
+    "@types/aws-lambda": "^8.10.136",
+    "aws-lambda": "^1.0.7",
+    "aws-sdk-mock": "^5.9.0",
+    "electrodb": "^2.13.1"
+  }
 }
