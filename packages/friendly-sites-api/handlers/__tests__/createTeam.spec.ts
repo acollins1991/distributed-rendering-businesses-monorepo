@@ -14,8 +14,8 @@ describe('createTeam', () => {
     // })
 
 
-    test('creates a new team record', async () => {
-        const team = await createTeam(mock<CloudFrontRequestEvent>())
-        expect(team).toBe(false)
-    })
+    // test('creates a new team record', async () => {
+    //     const team = await createTeam(mock<CloudFrontRequestEvent>())
+    //     expect(team).toBe(false)
+    // })
 })

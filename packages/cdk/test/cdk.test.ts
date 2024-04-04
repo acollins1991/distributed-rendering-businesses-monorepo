@@ -1,6 +1,6 @@
 import { test, describe } from "bun:test"
 import cdk from "aws-cdk-lib"
-import { CdkStack } from "../lib/cdk-stack";
+import { MyAppStack } from "../lib/cdk-stack";
 import { Template } from "aws-cdk-lib/assertions";
 
 // import * as cdk from 'aws-cdk-lib';
@@ -10,10 +10,10 @@ import { Template } from "aws-cdk-lib/assertions";
 // example test. To run these tests, uncomment this file along with the
 // example resource in lib/cdk-stack.ts
 describe('cdk stack', () => {
-    test('SQS Queue Created', () => {
+    test('API Created', () => {
         const app = new cdk.App();
         //     // WHEN
-        const stack = new CdkStack(app, 'MyTestStack');
+        const stack = new MyAppStack(app, 'MyTestStack');
         //     // THEN
         const template = Template.fromStack(stack);
 

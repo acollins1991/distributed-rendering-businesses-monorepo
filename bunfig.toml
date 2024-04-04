@@ -1,2 +1,3 @@
+# run test env setup
 [test]
 preload = ["./test-setup/index.ts"]
