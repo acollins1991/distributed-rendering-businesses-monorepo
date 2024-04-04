@@ -1,5 +1,4 @@
 {
-    "TableName": "friendly-sites-api",
     "KeySchema": [
         {
             "AttributeName": "pk",
