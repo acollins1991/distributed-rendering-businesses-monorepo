@@ -1,6 +1,6 @@
 import { test, describe } from "bun:test"
 import cdk from "aws-cdk-lib"
-import { MyAppStack } from "../lib/cdk-stack";
+import { BunCdkStack } from "../lib/cdk-stack";
 import { Template } from "aws-cdk-lib/assertions";
 
 // import * as cdk from 'aws-cdk-lib';
@@ -13,7 +13,7 @@ describe('cdk stack', () => {
     test('API Created', () => {
         const app = new cdk.App();
         //     // WHEN
-        const stack = new MyAppStack(app, 'MyTestStack');
+        const stack = new BunCdkStack(app, 'MyTestStack');
         //     // THEN
         const template = Template.fromStack(stack);
 

@@ -1,21 +1,33 @@
-import { describe, beforeAll, test, expect, afterAll } from "bun:test"
-import { client as db } from "../../db/index"
+import { describe, test, expect } from "bun:test"
 import createTeam from "../createTeam"
-// import { mockClient } from 'aws-sdk-client-mock';
-import { mock } from "jest-mock-extended"
-import type { CloudFrontRequestEvent } from "aws-lambda"
+import type { APIGatewayProxyEvent } from 'aws-lambda';
+
+import { entity as teamEntity } from "../../entities/team"
 
 describe('createTeam', () => {
 
-    // let dynamoDBMock;
+    test('creates a new team record', async () => {
 
-    // beforeAll(() => {
-    //     dynamoDBMock = mockClient(db);
-    // })
+        // @ts-ignore
+        const mockRequest: APIGatewayProxyEvent = {
+            httpMethod: "POST",
+            headers: {},
+            requestContext: {
+                authorizer: {
+                    claims: {
+                        sub: '123'
+                    }
+                }
+            },
+            body: JSON.stringify({
+                name: 'Testing Team 123'
+            })
+        } as APIGatewayProxyEvent
 
+        const req = await createTeam(mockRequest)
 
-    // test('creates a new team record', async () => {
-    //     const team = await createTeam(mock<CloudFrontRequestEvent>())
-    //     expect(team).toBe(false)
-    // })
+        console.log(req.body)
+
+        expect(req.statusCode).toBe(200)
+    })
 })

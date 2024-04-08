@@ -1,28 +1,53 @@
-import type { CloudFrontRequestEvent, CloudFrontResponseResult, CloudFrontRequestResult } from 'aws-lambda';
-import { client as db } from "../db/index"
+import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import { entity } from "../entities/team"
+import type { ElectroError } from 'electrodb';
+import { getAuthUserFromRequestEvent } from '../utils/getAuthUserFromRequestEvent';
 
-export default async function (event: CloudFrontRequestEvent): Promise<CloudFrontResponseResult | CloudFrontRequestResult> {
+export default async function (request: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
 
-    const request = event.Records[0].cf.request;
-
-    if (request.method !== 'POST') {
-        return request;
+    if (request.httpMethod !== 'POST' || !request.body) {
+        return {
+            statusCode: 401,
+            body: JSON.stringify({
+                message: 'Bad Request'
+            })
+        };
     }
 
-    if (!request.body) {
+    const user = getAuthUserFromRequestEvent(request)
+
+    if (typeof user !== 'string') {
         return {
-            status: '400',
-            statusDescription: 'Bad Request',
+            statusCode: 403,
+            body: JSON.stringify({
+                message: 'Not authorised'
+            })
         }
     }
 
-    const body = Buffer.from(request.body.data, 'base64').toString();
-    const parsedData = new URLSearchParams(body);
+    try {
 
-    // Do something
+        const { name, users } = JSON.parse(request.body)
 
-    return {
-        status: '201',
-        statusDescription: 'Created',
+        console.log(users ?? [user])
+
+        const team = await entity.create({
+            name,
+            users: users ?? [user]
+
+        }).go()
+
+        return {
+            statusCode: 200,
+            body: JSON.stringify(team.params)
+        }
+    } catch (e) {
+
+        const error = e as ElectroError
+
+        return {
+            statusCode: 500,
+            body: JSON.stringify(error)
+        }
     }
 }

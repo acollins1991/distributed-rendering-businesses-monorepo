@@ -12,8 +12,8 @@ services:
       - ../..:/workspaces:cached
     command: /bin/sh -c "while sleep 1000; do :; done"
     environment:
-      AWS_ACCESS_KEY_ID: 'DUMMYIDEXAMPLE'
-      AWS_SECRET_ACCESS_KEY: 'DUMMYEXAMPLEKEY'
+      # AWS_ACCESS_KEY_ID: 'DUMMYIDEXAMPLE'
+      # AWS_SECRET_ACCESS_KEY: 'DUMMYEXAMPLEKEY'
       REGION: 'eu-west-1'
 
   localstack:

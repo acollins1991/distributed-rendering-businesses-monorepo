@@ -2,10 +2,15 @@ import { beforeAll, afterAll } from "bun:test"
 import { $ } from "bun";
 import { table } from "../packages/friendly-sites-api/db/index"
 
+const region = 'us-west-1'
+const endpointUrl = 'http://localstack:4566'
+
 beforeAll(async () => {
-    await $`aws --region=us-west-1 --endpoint-url=http://localstack:4566 dynamodb create-table --cli-input-json file://friendly-sites-api-table.json --table-name=${table}`;
+    // setup table
+    await $`aws --region=${region} --endpoint-url=${endpointUrl} dynamodb create-table --cli-input-json file://friendly-sites-api-table.json --table-name=${table} > /dev/null`;
 })
 
 afterAll(async () => {
-    await $`aws --region=us-west-1 --endpoint-url=http://localstack:4566 dynamodb delete-table --table-name=${table}`;
+    // teardown table
+    await $`aws --region=${region} --endpoint-url=${endpointUrl} dynamodb delete-table --table-name=${table} > /dev/null`;
 })
