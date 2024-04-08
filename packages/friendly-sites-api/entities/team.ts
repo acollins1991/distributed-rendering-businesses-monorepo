@@ -21,7 +21,7 @@ export const entity = createNewEntity('account', 'accounts', {
         },
         sk: {
             field: "sk",
-            composite: ["id"],
+            composite: [],
         },
     }
 })

@@ -1,15 +1,24 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { entity } from "../entities/team"
+import { entity } from "../../entities/team"
 import type { ElectroError } from 'electrodb';
-import { getAuthUserFromRequestEvent } from '../utils/getAuthUserFromRequestEvent';
+import { getAuthUserFromRequestEvent } from '../../utils/getAuthUserFromRequestEvent';
 
 export default async function (request: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
 
-    if (request.httpMethod !== 'POST' || !request.body) {
+    if (request.httpMethod !== 'PUT' || !request.body) {
         return {
             statusCode: 401,
             body: JSON.stringify({
                 message: 'Bad Request'
+            })
+        };
+    }
+
+    if (!request.pathParameters || !request.pathParameters['id']) {
+        return {
+            statusCode: 401,
+            body: JSON.stringify({
+                message: 'Bad Request: missing team id'
             })
         };
     }
@@ -26,25 +35,18 @@ export default async function (request: APIGatewayProxyEvent): Promise<APIGatewa
     }
 
     try {
-
-        const { name, users } = JSON.parse(request.body)
-
-        console.log(users ?? [user])
-
-        const team = await entity.create({
-            name,
-            users: users ?? [user]
-
-        }).go()
+        const { id: teamId } = request.pathParameters;
+        const { name } = JSON.parse(request.body)
+        // TODO: must be a more efficient way to return the updated record than getting again
+        const team = await entity.patch({ id: teamId }).set({ name }).go()
+            .then(async () => await entity.get({ id: teamId }).go())
 
         return {
             statusCode: 200,
-            body: JSON.stringify(team.params)
+            body: JSON.stringify(team.data)
         }
     } catch (e) {
-
         const error = e as ElectroError
-
         return {
             statusCode: 500,
             body: JSON.stringify(error)

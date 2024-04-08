@@ -1,19 +1,21 @@
 import createNewEntity from "./createNewEntity";
 
 export const entity = createNewEntity('site', 'sites', {
-    accountId: {
+    teamId: {
         type: 'string',
-        required: true
+        required: true,
+        readOnly: true
     },
     domain: {
         type: 'string',
+        default: () => crypto.randomUUID(),
         required: true
     }
 }, {
     byAccount: {
         pk: {
             field: "pk",
-            composite: ["accountId"],
+            composite: ["teamId"],
         },
         sk: {
             field: "sk",
