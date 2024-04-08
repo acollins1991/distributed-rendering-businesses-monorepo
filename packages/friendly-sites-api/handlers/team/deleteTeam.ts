@@ -2,39 +2,30 @@ import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { entity } from "../../entities/team"
 import type { ElectroError } from 'electrodb';
 import { getAuthUserFromRequestEvent } from '../../utils/getAuthUserFromRequestEvent';
+import friendlySitesAPIHandler from '../../utils/friendlySitesAPIHandler';
 
 export default async function (request: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-
-    if (request.httpMethod !== 'DELETE') {
-        return {
-            statusCode: 401,
-            body: JSON.stringify({
-                message: 'Bad Request'
-            })
-        };
-    }
-
-    if (!request.pathParameters || !request.pathParameters['id']) {
-        return {
-            statusCode: 401,
-            body: JSON.stringify({
-                message: 'Bad Request: missing team id'
-            })
-        };
-    }
-
-    const user = getAuthUserFromRequestEvent(request)
-
-    if (typeof user !== 'string') {
-        return {
-            statusCode: 403,
-            body: JSON.stringify({
-                message: 'Not authorised'
-            })
+    return friendlySitesAPIHandler(request, 'DELETE', async (request: APIGatewayProxyEvent) => {
+        if (!request.pathParameters || !request.pathParameters['id']) {
+            return {
+                statusCode: 401,
+                body: JSON.stringify({
+                    message: 'Bad Request: missing team id'
+                })
+            };
         }
-    }
 
-    try {
+        const user = getAuthUserFromRequestEvent(request)
+
+        if (typeof user !== 'string') {
+            return {
+                statusCode: 403,
+                body: JSON.stringify({
+                    message: 'Not authorised'
+                })
+            }
+        }
+
         const { id: teamId } = request.pathParameters;
         // TODO: must be a more efficient way to return the updated record than getting again
         const team = await entity.get({ id: teamId }).go()
@@ -45,14 +36,5 @@ export default async function (request: APIGatewayProxyEvent): Promise<APIGatewa
             statusCode: 200,
             body: JSON.stringify(team.data)
         }
-    } catch (e) {
-        const error = e as ElectroError
-
-        console.log(error)
-
-        return {
-            statusCode: 500,
-            body: JSON.stringify(error)
-        }
-    }
+    })
 }
