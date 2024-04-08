@@ -1,7 +1,7 @@
 import { describe, test, expect, beforeAll } from "bun:test"
 import { entity as teamEntity } from "../../../entities/team"
 import deleteTeam from "../deleteTeam"
-import type { APIGatewayProxyEvent } from "aws-lambda"
+import createAPIRequestEvent from "../../../factories/APIRequestEvent";
 
 describe('deleteTeam', () => {
 
@@ -21,21 +21,14 @@ describe('deleteTeam', () => {
     })
 
     test('removes team record from db', async () => {
-        // @ts-ignore
-        const mockRequest = {
-            httpMethod: "DELETE",
-            headers: {},
-            requestContext: {
-                authorizer: {
-                    claims: {
-                        sub: authUser.sub
-                    }
-                }
-            },
-            pathParameters: {
+        const mockRequest = createAPIRequestEvent(
+            'DELETE',
+            authUser.sub,
+            '',
+            {
                 id: team.id
             }
-        } as APIGatewayProxyEvent
+        )
 
         const req = await deleteTeam(mockRequest)
 

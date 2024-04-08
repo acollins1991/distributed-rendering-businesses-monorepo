@@ -2,6 +2,7 @@ import { describe, test, expect, beforeAll } from "bun:test"
 import { entity as teamEntity } from "../../../entities/team"
 import updateTeam from "../updateTeam"
 import type { APIGatewayProxyEvent } from "aws-lambda"
+import createAPIRequestEvent from "../../../factories/APIRequestEvent"
 
 describe('updateTeam', () => {
 
@@ -21,24 +22,16 @@ describe('updateTeam', () => {
     })
 
     test('returns same team record with updated name', async () => {
-        // @ts-ignore
-        const mockRequest: APIGatewayProxyEvent = {
-            httpMethod: "PUT",
-            headers: {},
-            requestContext: {
-                authorizer: {
-                    claims: {
-                        sub: authUser.sub
-                    }
-                }
-            },
-            pathParameters: {
-                id: team.id
-            },
-            body: JSON.stringify({
+        const mockRequest = createAPIRequestEvent(
+            'PUT',
+            authUser.sub,
+            JSON.stringify({
                 name: 'Testing Team 123'
-            })
-        } as APIGatewayProxyEvent
+            }),
+            {
+                id: team.id
+            }
+        )
 
         const req = await updateTeam(mockRequest)
 

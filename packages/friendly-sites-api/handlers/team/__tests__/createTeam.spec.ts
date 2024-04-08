@@ -1,24 +1,17 @@
 import { describe, test, expect } from "bun:test"
 import createTeam from "../createTeam"
 import type { APIGatewayProxyEvent } from 'aws-lambda';
+import createAPIRequestEvent from "../../../factories/APIRequestEvent";
 
 describe('createTeam', () => {
     test('returns a new team record with authorised user sub as default user', async () => {
-        // @ts-ignore
-        const mockRequest: APIGatewayProxyEvent = {
-            httpMethod: "POST",
-            headers: {},
-            requestContext: {
-                authorizer: {
-                    claims: {
-                        sub: '123'
-                    }
-                }
-            },
-            body: JSON.stringify({
+        const mockRequest = createAPIRequestEvent(
+            'POST',
+            '123',
+            JSON.stringify({
                 name: 'Testing Team 123'
             })
-        } as APIGatewayProxyEvent
+        )
 
         const req = await createTeam(mockRequest)
 
