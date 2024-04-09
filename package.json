@@ -4,6 +4,7 @@
     "packages/*"
   ],
   "devDependencies": {
+    "@faker-js/faker": "^8.4.1",
     "@types/bun": "latest",
     "vitest-mock-extended": "^1.3.1"
   },

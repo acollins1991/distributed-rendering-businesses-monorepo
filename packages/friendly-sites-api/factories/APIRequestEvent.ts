@@ -1,9 +1,10 @@
 import type { APIGatewayProxyEvent } from "aws-lambda";
 import { mock } from "vitest-mock-extended"
+import type { User } from "../entities/user";
 
 function createAPIRequestEvent(
     httpMethod: APIGatewayProxyEvent['httpMethod'],
-    userSub: string,
+    user: User,
     body: APIGatewayProxyEvent['body'] = '',
     pathParameters: APIGatewayProxyEvent['pathParameters'] = {},
     queryStringParameters: APIGatewayProxyEvent['queryStringParameters'] = {},
@@ -17,7 +18,7 @@ function createAPIRequestEvent(
         requestContext: {
             authorizer: {
                 claims: {
-                    sub: userSub
+                    sub: user.id
                 }
             }
         }

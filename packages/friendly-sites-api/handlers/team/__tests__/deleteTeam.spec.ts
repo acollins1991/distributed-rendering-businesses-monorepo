@@ -2,19 +2,18 @@ import { describe, test, expect, beforeAll } from "bun:test"
 import { entity as teamEntity } from "../../../entities/team"
 import deleteTeam from "../deleteTeam"
 import createAPIRequestEvent from "../../../factories/APIRequestEvent";
+import createUserFactory from "../../../factories/User";
 
 describe('deleteTeam', () => {
 
     let team
     const teamName = 'Team ' + crypto.randomUUID()
-    const authUser = {
-        sub: crypto.randomUUID()
-    }
+    const authUser = createUserFactory()
 
     beforeAll(async () => {
         const teamRes = await teamEntity.create({
             name: teamName,
-            users: [authUser.sub]
+            users: [authUser.id]
         }).go()
 
         team = teamRes.data
@@ -23,7 +22,7 @@ describe('deleteTeam', () => {
     test('removes team record from db', async () => {
         const mockRequest = createAPIRequestEvent(
             'DELETE',
-            authUser.sub,
+            authUser,
             '',
             {
                 id: team.id
