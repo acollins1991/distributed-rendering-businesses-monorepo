@@ -37,7 +37,7 @@ function createNewEntity(
                 watch: "*",
                 required: true,
                 default: () => Date.now(),
-                set: () => Date.now(),
+                set: () => Date.now()
             },
         },
         indexes

@@ -12,29 +12,29 @@ function isValidEmail(email: string): boolean {
     return emailRegex.test(email);
 }
 
-export const entity = createNewEntity('user', 'users', {
-    first_name: {
-        type: "string",
-        required: true
-    },
-    last_name: {
-        type: "string",
-        required: true
-    },
-    email: {
-        type: "string",
-        required: true,
-        validate: isValidEmail
-    }
-}, {
-    user: {
-        pk: {
-            field: "pk",
-            composite: ["id"],
-        },
-        sk: {
-            field: "sk",
-            composite: ["id"],
-        },
-    }
-})
+// export const entity = createNewEntity('user', 'users', {
+//     first_name: {
+//         type: "string",
+//         required: true
+//     },
+//     last_name: {
+//         type: "string",
+//         required: true
+//     },
+//     email: {
+//         type: "string",
+//         required: true,
+//         validate: isValidEmail
+//     }
+// }, {
+//     user: {
+//         pk: {
+//             field: "pk",
+//             composite: ["id"],
+//         },
+//         sk: {
+//             field: "sk",
+//             composite: ["id"],
+//         },
+//     }
+// })
