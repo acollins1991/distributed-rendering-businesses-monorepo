@@ -2,6 +2,8 @@ import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { entity } from "../../entities/site"
 import { getAuthUserFromRequestEvent } from '../../utils/getAuthUserFromRequestEvent';
 import friendlySitesAPIHandler from '../../utils/friendlySitesAPIHandler';
+import { createHostedZone } from '../../utils/createHostedZone';
+import { faker } from "@faker-js/faker"
 
 export default async function (request: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
     return friendlySitesAPIHandler(request, 'POST', async (request: APIGatewayProxyEvent) => {
@@ -16,10 +18,16 @@ export default async function (request: APIGatewayProxyEvent): Promise<APIGatewa
             }
         }
 
-        const { teamId, name } = JSON.parse(request.body)
+        const { teamId, name, domain: reqDomain } = JSON.parse(request.body as string)
+
+        const domain = reqDomain ? reqDomain : `${faker.word.words(5).replaceAll(' ', '-')}.friendly-sites.com`
+        const hostedZone = await createHostedZone(domain)
+
         const team = await entity.create({
             teamId,
-            name
+            name,
+            domain,
+            hosted_zone: hostedZone.HostedZone?.Id as string
 
         }).go()
 

@@ -11,7 +11,7 @@ describe('deleteSite', () => {
         const siteName = 'Tesing Site ' + crypto.randomUUID()
         const teamId = crypto.randomUUID()
 
-        const { siteId } = await siteEntity.create({ name: siteName, teamId }).go().then(res => res.data)
+        const { siteId } = await siteEntity.create({ name: siteName, teamId, domain: 'dummydomain', hosted_zone: 'dummyhostedzoneid' }).go().then(res => res.data)
 
         const mockRequest = createAPIRequestEvent('DELETE', createUserFactory(), JSON.stringify({
             siteId: siteId

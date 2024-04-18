@@ -25,7 +25,11 @@ const schema = createSchema({
         },
         domain: {
             type: 'string',
-            default: () => crypto.randomUUID()
+            required: true
+        },
+        hosted_zone: {
+            type: 'string',
+            required: true
         },
         created_at: {
             type: "number",

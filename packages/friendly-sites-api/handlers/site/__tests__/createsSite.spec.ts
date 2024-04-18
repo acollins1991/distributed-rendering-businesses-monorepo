@@ -21,6 +21,7 @@ describe('createSite', () => {
         const siteRecord = await siteEntity.find({ name: siteName, teamId }).go()
 
         expect(siteRecord.data[0].name).toBe(siteName)
+        expect(siteRecord.data[0].hosted_zone).toBeString()
 
     })
 })
