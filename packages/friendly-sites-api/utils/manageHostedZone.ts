@@ -1,4 +1,4 @@
-import { Route53Client, CreateHostedZoneCommand, VPCRegion } from "@aws-sdk/client-route-53"
+import { Route53Client, CreateHostedZoneCommand, DeleteHostedZoneCommand } from "@aws-sdk/client-route-53"
 
 const credentials = {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID as string,
@@ -15,18 +15,21 @@ const clientParams = {
 const client = new Route53Client(clientParams);
 
 export async function createHostedZone(domain: string) {
-    console.log('domain ', domain)
     const input = {
         Name: domain,
-        // VPC: {
-        //     VPCRegion: 'us-west-1' as VPCRegion,
-        // },
-        CallerReference: domain, // required
-        // HostedZoneConfig: {
-        //     PrivateZone: false,
-        // },
+        CallerReference: `${domain}--create`
     };
     const command = new CreateHostedZoneCommand(input)
+
+    return client.send(command)
+}
+
+export async function deleteHostedZone(id: string) {
+    const input = {
+        Id: id,
+        CallerReference: `${id}--delete`
+    };
+    const command = new DeleteHostedZoneCommand(input)
 
     return client.send(command)
 }
