@@ -1,33 +1,25 @@
-import { describe, test, expect, mock } from "bun:test"
+import { describe, test, expect, beforeAll } from "bun:test"
 import createAPIRequestEvent from "../../../factories/APIRequestEvent"
 import createUserFactory from "../../../factories/User"
 import { entity as siteEntity } from "../../../entities/site"
 import updateSite from "../updateSite"
 import { createHostedZone } from "../../../utils/manageHostedZone"
-import { mock as mockType } from "vitest-mock-extended"
-
-mock.module("../../../utils/manageHostedZone", () => {
-    return {
-        async createHostedZone(domain: string): ReturnType<typeof createHostedZone> {
-            const mockedHostedZone = mockType<Awaited<ReturnType<typeof createHostedZone>>>()
-            mockedHostedZone.HostedZone = {
-                Name: domain,
-                Id: domain,
-                CallerReference: ""
-            }
-            return mockedHostedZone
-        }
-    };
-});
 
 describe('updateSite', () => {
+
+    // preexisting setup hosted zone
+    let hostedZone: Awaited<ReturnType<typeof createHostedZone>>
+    beforeAll(async () => {
+        hostedZone = await createHostedZone("dummydomain.co.uk")
+    })
+
 
     test('updates the site record name', async () => {
 
         const siteName = 'Tesing Site ' + crypto.randomUUID()
         const teamId = crypto.randomUUID()
 
-        const { siteId } = await siteEntity.create({ name: siteName, teamId, domain: 'dummydomain', hosted_zone: "dummydomain" }).go().then(res => res.data)
+        const { siteId } = await siteEntity.create({ name: siteName, teamId, domain: 'dummydomain', hosted_zone: hostedZone.HostedZone?.Id as string }).go().then(res => res.data)
 
         const newSiteName = 'Tesing Site ' + crypto.randomUUID()
         const mockRequest = createAPIRequestEvent('PUT', createUserFactory(), JSON.stringify({

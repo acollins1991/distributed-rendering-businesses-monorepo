@@ -63,7 +63,7 @@ export default async function (request: APIGatewayProxyEvent): Promise<APIGatewa
             .set(patchObject)
 
         // if domain has changed update with new zone
-        if (patchObject.domain !== existingRecord?.domain) {
+        if (patchObject.domain && patchObject.domain !== existingRecord?.domain) {
             await deleteHostedZone(existingRecord.hosted_zone)
             const newHostedZone = await createHostedZone(patchObject.domain)
             updatedRecordCommand.set({
@@ -71,7 +71,9 @@ export default async function (request: APIGatewayProxyEvent): Promise<APIGatewa
             })
         }
 
-        const updatedRecord = await updatedRecordCommand.go()
+        const updatedRecord = await updatedRecordCommand
+            // should return full record
+            .go({ response: "all_new" })
 
         return {
             statusCode: 200,
