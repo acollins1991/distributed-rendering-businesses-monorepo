@@ -4,6 +4,7 @@ import { getAuthUserFromRequestEvent } from '../../utils/getAuthUserFromRequestE
 import friendlySitesAPIHandler from '../../utils/friendlySitesAPIHandler';
 import { faker } from "@faker-js/faker"
 import { createHostedZone } from '../../utils/manageHostedZone';
+import { friendlySitesDomainGenerator } from '../../utils/friendlySitesDomainGenerator';
 
 export default async function (request: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
     return friendlySitesAPIHandler(request, 'POST', async (request: APIGatewayProxyEvent) => {
@@ -20,7 +21,7 @@ export default async function (request: APIGatewayProxyEvent): Promise<APIGatewa
 
         const { teamId, name, domain: reqDomain } = JSON.parse(request.body as string)
 
-        const domain = reqDomain ? reqDomain : `${faker.word.words(5).replaceAll(' ', '-')}.friendly-sites.com`
+        const domain = reqDomain ? reqDomain : friendlySitesDomainGenerator()
         const hostedZone = await createHostedZone(domain)
 
         const team = await entity.create({
