@@ -2,7 +2,7 @@ import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { entity } from "../../entities/site"
 import { getAuthUserFromRequestEvent } from '../../utils/getAuthUserFromRequestEvent';
 import friendlySitesAPIHandler from '../../utils/friendlySitesAPIHandler';
-import { deleteHostedZone } from '../../utils/manageHostedZone';
+import { createHostedZone, deleteHostedZone } from '../../utils/manageHostedZone';
 
 export default async function (request: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
     return friendlySitesAPIHandler(request, 'PUT', async (request: APIGatewayProxyEvent) => {
@@ -39,6 +39,15 @@ export default async function (request: APIGatewayProxyEvent): Promise<APIGatewa
 
         const { id: siteId } = request.pathParameters;
 
+        if (!siteId) {
+            return {
+                statusCode: 400,
+                body: JSON.stringify({
+                    message: `Missing siteId parameter`
+                })
+            }
+        }
+
         const { data: existingRecord } = await entity.get({ siteId }).go()
 
         if (!existingRecord) {
@@ -53,16 +62,20 @@ export default async function (request: APIGatewayProxyEvent): Promise<APIGatewa
         const updatedRecordCommand = entity.patch({ siteId })
             .set(patchObject)
 
-        // if domain has changed 
+        // if domain has changed update with new zone
         if (patchObject.domain !== existingRecord?.domain) {
-            deleteHostedZone(existingRecord.hosted_zone)
+            await deleteHostedZone(existingRecord.hosted_zone)
+            const newHostedZone = await createHostedZone(patchObject.domain)
+            updatedRecordCommand.set({
+                hosted_zone: newHostedZone.HostedZone?.Id
+            })
         }
 
         const updatedRecord = await updatedRecordCommand.go()
 
         return {
             statusCode: 200,
-            body: JSON.stringify(team.data)
+            body: JSON.stringify(updatedRecord.data)
         }
     })
 }

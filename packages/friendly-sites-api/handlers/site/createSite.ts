@@ -2,8 +2,8 @@ import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { entity } from "../../entities/site"
 import { getAuthUserFromRequestEvent } from '../../utils/getAuthUserFromRequestEvent';
 import friendlySitesAPIHandler from '../../utils/friendlySitesAPIHandler';
-import { createHostedZone } from '../../utils/createHostedZone';
 import { faker } from "@faker-js/faker"
+import { createHostedZone } from '../../utils/manageHostedZone';
 
 export default async function (request: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
     return friendlySitesAPIHandler(request, 'POST', async (request: APIGatewayProxyEvent) => {
