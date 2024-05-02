@@ -11,7 +11,6 @@
     "@aws-sdk/client-lambda": "^3.540.0",
     "@aws-sdk/client-route-53": "^3.554.0",
     "@faker-js/faker": "^8.4.1",
-    "@hono/zod-validator": "^0.2.1",
     "@types/aws-lambda": "^8.10.136",
     "aws-lambda": "^1.0.7",
     "electrodb": "^2.13.1",

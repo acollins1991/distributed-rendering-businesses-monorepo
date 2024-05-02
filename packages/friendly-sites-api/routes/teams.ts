@@ -1,9 +1,9 @@
 import { Hono } from 'hono'
 import type { LambdaBindings } from '../types'
 import { z } from 'zod'
-import { zValidator } from '@hono/zod-validator'
 import { getAuthUserFromRequestEvent } from '../utils/getAuthUserFromRequestEvent'
 import { entity } from '../entities/team'
+import validateLambdaEvent from '../utils/validateLambdaEvent'
 
 const teams = new Hono<{ Bindings: LambdaBindings }>()
 
@@ -12,18 +12,14 @@ const PostBodySchema = z.object({
     name: z.string(),
     users: z.array(z.string()).optional()
 })
-const PostSchema = z.object({
-    env: z.object({
-        context: z.unknown(), // Keep as unknown
-        event: z.object({
-            body: z.string().transform(bodyString => JSON.parse(bodyString) as PostBodySchemaType), // Parse body as JSON and type it
-        }),
-    }),
-})
 type PostBodySchemaType = z.infer<typeof PostBodySchema>;
 teams.post(
     "/",
-    // zValidator('json', PostSchema),
+    validateLambdaEvent(
+        {
+            bodySchema: PostBodySchema
+        }
+    ),
     async (c) => {
 
         const user = getAuthUserFromRequestEvent(c.env.event)
@@ -50,18 +46,12 @@ const PatchBodySchema = z.object({
     name: z.string(),
     users: z.array(z.string()).min(1)
 }).partial()
-const PatchSchema = z.object({
-    env: z.object({
-        context: z.unknown(), // Keep as unknown
-        event: z.object({
-            body: z.string().transform(bodyString => JSON.parse(bodyString) as PatchBodySchemaType), // Parse body as JSON and type it
-        }),
-    }),
-})
 type PatchBodySchemaType = z.infer<typeof PatchBodySchema>;
 teams.patch(
     "/:teamId",
-    // zValidator('json', PostSchema),
+    validateLambdaEvent({
+        bodySchema: PatchBodySchema
+    }),
     async (c) => {
 
         const user = getAuthUserFromRequestEvent(c.env.event)
@@ -73,16 +63,15 @@ teams.patch(
         }
 
         const teamId = c.req.param("teamId")
-        const patchObject = JSON.parse(c.env.event.body as string) as PostBodySchemaType
+        const patchObject = JSON.parse(c.env.event.body as string) as PatchBodySchemaType
         const team = await entity.patch({ teamId }).set(patchObject).go({ response: "all_new" })
 
         return c.json(team.data, 200)
     })
 
-// /teams PATCH
+// /teams GET
 teams.get(
     "/:teamId",
-    // zValidator('json', PostSchema),
     async (c) => {
 
         const user = getAuthUserFromRequestEvent(c.env.event)
@@ -102,7 +91,6 @@ teams.get(
 // /teams DELETE
 teams.delete(
     "/:teamId",
-    // zValidator('json', PostSchema),
     async (c) => {
 
         const user = getAuthUserFromRequestEvent(c.env.event)

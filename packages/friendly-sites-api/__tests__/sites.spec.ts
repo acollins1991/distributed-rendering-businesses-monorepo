@@ -9,6 +9,60 @@ import { friendlySitesDomainGenerator } from "../utils/friendlySitesDomainGenera
 
 describe("/sites endpoints", () => {
     describe("POST", () => {
+        test('request without name fails', async () => {
+            const teamId = crypto.randomUUID()
+            const authUser = createUserFactory()
+
+            const res = await app.request("/sites", {
+                method: "POST",
+                headers: {
+                    "content-type": "application/json"
+                },
+                body: JSON.stringify({})
+            }, {
+                event: {
+                    body: JSON.stringify({
+                        teamId
+                    }),
+                    requestContext: {
+                        authorizer: {
+                            claims: {
+                                sub: authUser.id
+                            }
+                        }
+                    }
+                }
+            })
+
+            expect(res.status).toBe(400)
+        })
+        test('request without teamId fails', async () => {
+            const siteName = 'Tesing Site ' + crypto.randomUUID()
+            const authUser = createUserFactory()
+
+            const res = await app.request("/sites", {
+                method: "POST",
+                headers: {
+                    "content-type": "application/json"
+                },
+                body: JSON.stringify({})
+            }, {
+                event: {
+                    body: JSON.stringify({
+                        name: siteName
+                    }),
+                    requestContext: {
+                        authorizer: {
+                            claims: {
+                                sub: authUser.id
+                            }
+                        }
+                    }
+                }
+            })
+
+            expect(res.status).toBe(400)
+        })
         test('creates a new site record', async () => {
             const siteName = 'Tesing Site ' + crypto.randomUUID()
             const teamId = crypto.randomUUID()

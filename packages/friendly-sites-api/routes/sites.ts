@@ -1,14 +1,14 @@
 import { Hono } from 'hono'
+import type { Context, Next } from "hono"
 import type { LambdaBindings } from '../types'
-import { z } from 'zod'
-import { zValidator } from '@hono/zod-validator'
+import { ZodSchema, z } from 'zod'
 import { getAuthUserFromRequestEvent } from '../utils/getAuthUserFromRequestEvent'
 import { friendlySitesDomainGenerator } from '../utils/friendlySitesDomainGenerator'
 import { createHostedZone, deleteHostedZone } from '../utils/manageHostedZone'
 import { entity } from '../entities/site'
+import validateLambdaEvent from '../utils/validateLambdaEvent'
 
 const sites = new Hono<{ Bindings: LambdaBindings }>()
-
 
 // /sites POST
 const BodySchema = z.object({
@@ -16,18 +16,12 @@ const BodySchema = z.object({
     name: z.string(),
     domain: z.string().optional()
 })
-const CreateSitePostSchema = z.object({
-    env: z.object({
-        context: z.unknown(), // Keep as unknown
-        event: z.object({
-            body: z.string().transform(bodyString => JSON.parse(bodyString) as BodySchemaType), // Parse body as JSON and type it
-        }),
-    }),
-})
 type BodySchemaType = z.infer<typeof BodySchema>;
 sites.post(
     "/",
-    // zValidator('json', CreateSitePostSchema),
+    validateLambdaEvent({
+        bodySchema: BodySchema
+    }),
     async (c) => {
 
         const user = getAuthUserFromRequestEvent(c.env.event)
@@ -56,22 +50,15 @@ sites.post(
 
 // /sites PATCH
 const PatchBodySchema = z.object({
-    teamId: z.string(),
     name: z.string(),
-    domain: z.string().optional()
-})
-const UpdateSiteSchema = z.object({
-    env: z.object({
-        context: z.unknown(), // Keep as unknown
-        event: z.object({
-            body: z.string().transform(bodyString => JSON.parse(bodyString) as PatchBodySchemaType), // Parse body as JSON and type it
-        }),
-    }),
-})
+    domain: z.string()
+}).partial()
 type PatchBodySchemaType = z.infer<typeof PatchBodySchema>;
 sites.patch(
     "/:siteId",
-    // zValidator('json', UpdateSiteSchema),
+    validateLambdaEvent({
+        bodySchema: PatchBodySchema
+    }),
     async (c) => {
 
         const user = getAuthUserFromRequestEvent(c.env.event)
