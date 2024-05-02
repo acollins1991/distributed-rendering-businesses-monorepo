@@ -1,4 +1,4 @@
-import type { APIGatewayEvent } from 'aws-lambda';
+import type { LambdaBindings } from '../types';
 
 type CognitoUser = {
     sub: string;
@@ -8,7 +8,7 @@ type CognitoClaims = {
     sub: string;
 }
 
-export function getAuthUserFromRequestEvent(event: APIGatewayEvent): CognitoUser['sub'] | Error {
+export function getAuthUserFromRequestEvent(event: LambdaBindings["event"]): CognitoUser['sub'] | Error {
     try {
         // Access user information from Cognito claims
         const claims = (event.requestContext as any).authorizer.claims as CognitoClaims;

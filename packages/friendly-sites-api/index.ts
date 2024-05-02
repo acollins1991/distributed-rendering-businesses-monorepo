@@ -1,19 +1,17 @@
 import { Hono } from 'hono'
-import type { LambdaEvent, LambdaContext } from 'hono/aws-lambda'
 import { handle } from 'hono/aws-lambda'
+import type { LambdaBindings } from './types'
+import sites from './routes/sites'
+import teams from './routes/teams'
 
-type Bindings = {
-    event: LambdaEvent
-    context: LambdaContext
+const app = new Hono<{ Bindings: LambdaBindings }>()
+
+// sites
+app.route("/sites", sites)
+app.route("/teams", teams)
+
+export {
+    app
 }
-
-const app = new Hono<{ Bindings: Bindings }>()
-
-app.get('/aws-lambda-info/', (c) => {
-    return c.json({
-        isBase64Encoded: c.env.event.isBase64Encoded,
-        awsRequestId: c.env.context.awsRequestId
-    })
-})
 
 export const handler = handle(app)

@@ -1,29 +1,13 @@
-import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import type { LambdaBindings } from '../types';
+import type { APIGatewayProxyResult } from 'hono/aws-lambda'
+import friendlySitesAPIHandlerResponse from './friendlySitesAPIHandlerResponse';
 
-type FriendlySitesAPIHandleryFn = (request: APIGatewayProxyEvent) => Promise<APIGatewayProxyResult>
-type HTTPMethod = 'GET' | 'DELETE' | 'POST' | 'PUT'
+type FriendlySitesAPIHandleryFn = (request: LambdaBindings) => Promise<APIGatewayProxyResult>
 
-function httpMethodGuard(method: HTTPMethod, request: APIGatewayProxyEvent): boolean {
-    return request.httpMethod === method
-}
-
-export default async function (request: APIGatewayProxyEvent, method: HTTPMethod, fn: FriendlySitesAPIHandleryFn): Promise<APIGatewayProxyResult> {
-
-    if (!httpMethodGuard(method, request)) {
-        return {
-            statusCode: 401,
-            body: JSON.stringify({
-                message: 'Bad Request: HTTP method'
-            })
-        };
-    }
-
+export default async function (request: LambdaBindings, fn: FriendlySitesAPIHandleryFn): Promise<APIGatewayProxyResult> {
     try {
         return fn(request)
     } catch (e) {
-        return {
-            statusCode: 500,
-            body: JSON.stringify(e)
-        }
+        return friendlySitesAPIHandlerResponse(500, JSON.stringify(e))
     }
 }

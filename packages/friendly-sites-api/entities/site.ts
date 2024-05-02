@@ -1,5 +1,4 @@
 import { Entity, createSchema } from "electrodb";
-import createNewEntity from "./createNewEntity";
 import { client, table } from "../db/index"
 
 const schema = createSchema({

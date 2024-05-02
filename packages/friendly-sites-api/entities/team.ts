@@ -1,27 +1,57 @@
-import createNewEntity from "./createNewEntity";
+import { Entity, createSchema } from "electrodb";
+import { client, table } from "../db/index"
 
-export const entity = createNewEntity('account', 'accounts', {
-    name: {
-        type: 'string',
-        required: true
+const schema = createSchema({
+    model: {
+        entity: 'entity',
+        version: '1',
+        service: 'sites',
     },
-    users: {
-        type: 'list',
-        items: {
+    attributes: {
+        teamId: {
+            type: "string",
+            default: () => crypto.randomUUID(),
+            readOnly: true
+        },
+        name: {
             type: 'string',
+            required: true
+        },
+        users: {
+            type: 'list',
+            items: {
+                type: 'string',
+                required: true,
+            },
+            validate: (value: Array<string>) => value.length > 0 ? '' : 'Teams require at least one user'
+        },
+        created_at: {
+            type: "number",
+            readOnly: true,
             required: true,
+            default: () => Date.now(),
+            set: () => Date.now(),
         },
-        validate: (value: Array<string>) => value.length > 0 ? '' : 'Teams require at least one user'
-    }
-}, {
-    team: {
-        pk: {
-            field: "pk",
-            composite: ["id"],
+        updated_at: {
+            type: "number",
+            watch: "*",
+            required: true,
+            default: () => Date.now(),
+            set: () => Date.now()
         },
-        sk: {
-            field: "sk",
-            composite: [],
-        },
+    },
+    indexes: {
+        team: {
+            pk: {
+                field: "pk",
+                composite: ["teamId"],
+            },
+            sk: {
+                field: "sk",
+                composite: [],
+            },
+        }
     }
 })
+
+export const entity = new Entity(schema, { table, client },)
