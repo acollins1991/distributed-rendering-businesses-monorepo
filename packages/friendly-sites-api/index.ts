@@ -1,3 +1,4 @@
+import { hc } from 'hono/client'
 import { Hono } from 'hono'
 import { handle } from 'hono/aws-lambda'
 import type { LambdaBindings } from './types'
@@ -10,6 +11,8 @@ const app = new Hono<{ Bindings: LambdaBindings }>()
 app.route("/sites", sites)
 app.route("/teams", teams)
 
+type AppType = typeof app
+const client = hc<AppType>('http://localhost:8787/')
 export {
     app
 }
