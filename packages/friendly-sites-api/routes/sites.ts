@@ -120,5 +120,24 @@ sites.delete(
         return c.json(team, 200)
     })
 
+// /sites DELETE
+sites.get(
+    "/:siteId",
+    async (c) => {
+
+        const user = getAuthUserFromRequestEvent(c.env.event)
+
+        if (typeof user !== 'string') {
+            return c.json({
+                message: 'Not authorised'
+            }, 403)
+        }
+
+        const siteId = c.req.param('siteId')
+        const team = await entity.get({ siteId }).go()
+
+        return c.json(team, 200)
+    })
+
 
 export default sites

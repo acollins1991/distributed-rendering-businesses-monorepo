@@ -2,8 +2,11 @@ import { beforeAll, afterAll } from "bun:test"
 import { $ } from "bun";
 import { table } from "../packages/friendly-sites-api/db/index"
 
-const region = 'us-west-1'
-const endpointUrl = 'http://localstack:4566'
+const region = process.env.LOCALSTACK_REGION
+const endpointUrl = process.env.LOCALSTACK_ENDPOINT
+
+console.log(region)
+console.log(endpointUrl)
 
 beforeAll(async () => {
     // setup table

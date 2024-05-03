@@ -239,4 +239,40 @@ describe("/sites endpoints", () => {
 
         })
     })
+
+    describe('GET site record', () => {
+        test('deletes the site record', async () => {
+            const authUser = createUserFactory()
+
+            const siteName = 'Tesing Site ' + crypto.randomUUID()
+            const teamId = crypto.randomUUID()
+
+            const { siteId } = await entity.create({ name: siteName, teamId, domain: 'dummydomain', hosted_zone: 'dummyhostedzoneid' }).go().then(res => res.data)
+
+            // expect item to exist
+            expect((await entity.get({ siteId }).go()).data).toBeTruthy()
+
+            const res = await app.request(`/sites/${siteId}`, {
+                method: "GET",
+                headers: {
+                    "content-type": "application/json"
+                },
+                body: JSON.stringify({})
+            }, {
+                event: {
+                    requestContext: {
+                        authorizer: {
+                            claims: {
+                                sub: authUser.id
+                            }
+                        }
+                    }
+                }
+            })
+
+            expect(res.status).toBe(200)
+            const json = await res.json()
+            expect(json.data.siteId).toBe(siteId)
+        })
+    })
 })

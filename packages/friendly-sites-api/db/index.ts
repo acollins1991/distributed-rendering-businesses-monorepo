@@ -6,8 +6,8 @@ const credentials = {
 }
 
 const clientParams = {
-    region: 'us-west-1',
-    endpoint: 'http://localstack:4566',
+    region: process.env.LOCALSTACK_REGION,
+    endpoint: process.env.LOCALSTACK_ENDPOINT,
     credentials
 }
 

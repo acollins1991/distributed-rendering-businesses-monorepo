@@ -3,18 +3,15 @@ services:
 
   devcontainer:
     restart: unless-stopped
-    # depends_on:
-    #   - localstack
     build:
       context: .
       dockerfile: Dockerfile
     volumes:
       - ../..:/workspaces:cached
     command: /bin/sh -c "while sleep 1000; do :; done"
-    environment:
-      # AWS_ACCESS_KEY_ID: 'DUMMYIDEXAMPLE'
-      # AWS_SECRET_ACCESS_KEY: 'DUMMYEXAMPLEKEY'
-      REGION: 'eu-west-1'
+    depends_on:
+      - localstack
+      - cognito-local
 
   localstack:
     # LocalStack container
@@ -27,3 +24,8 @@ services:
     #   # when the container starts
     #   - ./localstack-setup.sh:/etc/localstack/init/ready.d/script.sh
     #   - ./friendly-sites-table-schema.json:/etc/friendly-sites-table-schema.json
+
+  cognito-local:
+    image: jagregory/cognito-local:3.23.3
+    ports:
+      - 9229:9229
