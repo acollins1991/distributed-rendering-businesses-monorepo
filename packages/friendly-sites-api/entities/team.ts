@@ -43,8 +43,12 @@ const schema = createSchema({
     indexes: {
         team: {
             pk: {
-                field: "teamId",
+                field: "pk",
                 composite: ["teamId"],
+            },
+            sk: {
+                field: "sk",
+                composite: [],
             },
         }
     }
