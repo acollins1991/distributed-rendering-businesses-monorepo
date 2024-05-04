@@ -5,7 +5,7 @@ const schema = createSchema({
     model: {
         entity: 'entity',
         version: '1',
-        service: 'sites',
+        service: 'teams',
     },
     attributes: {
         teamId: {
@@ -43,12 +43,8 @@ const schema = createSchema({
     indexes: {
         team: {
             pk: {
-                field: "pk",
+                field: "teamId",
                 composite: ["teamId"],
-            },
-            sk: {
-                field: "sk",
-                composite: [],
             },
         }
     }
