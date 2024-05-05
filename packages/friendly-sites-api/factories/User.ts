@@ -34,8 +34,6 @@ async function createUserFactory(overrides: UserFactoryOverrised = {}, sessionOp
         password_hash: await bunPassword.hash(userObject.password)
     }).go()
 
-    console.log(user)
-
     if (sessionOptions) {
         // create user session record
         await sessionEntity.create({

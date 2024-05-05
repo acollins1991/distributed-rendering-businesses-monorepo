@@ -17,7 +17,9 @@ declare module "lucia" {
     interface Register {
         Lucia: typeof auth;
         DatabaseUserAttributes: User;
-        DatabaseSessionAttributes: Session
+        DatabaseSessionAttributes: {
+            expires_at: ReturnType<typeof Date.now>
+        }
     }
 }
 

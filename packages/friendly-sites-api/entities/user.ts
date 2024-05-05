@@ -71,6 +71,10 @@ const schema = createSchema({
             pk: {
                 field: "gsi1pk",
                 composite: ["email"]
+            },
+            sk: {
+                field: "gsi1sk",
+                composite: []
             }
         }
     }

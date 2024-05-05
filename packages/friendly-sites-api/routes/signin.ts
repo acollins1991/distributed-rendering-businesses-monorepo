@@ -6,6 +6,7 @@ import { auth } from "../auth";
 import { entity } from "../entities/user";
 import { password as bunPassword } from "bun";
 import { setCookie } from "hono/cookie";
+import { add } from "date-fns";
 
 const signin = new Hono<{ Bindings: LambdaBindings }>()
 
@@ -20,7 +21,6 @@ signin.post(
         bodySchema: BodySchema
     }),
     async (c) => {
-
         const {
             email,
             password
@@ -35,34 +35,21 @@ signin.post(
                 throw Error('Invalid email or password')
             }
 
-            const isValidPassword = await bunPassword.verify(user.password_hash, password)
+            const isValidPassword = await bunPassword.verify(password, user.password_hash)
 
             if (!isValidPassword) {
                 throw Error('Invalid email or password')
             }
 
-            const session = await auth.createSession(user.userId, {});
-            const sessionCookie = auth.createSessionCookie(session.id);
+            const session = await auth.createSession(user.userId, {
+                expires_at: add(Date.now(), {
+                    months: 1
+                }).getTime()
+            });
 
-            // console.log(await auth.getUserSessions(user.userId))
-
-            setCookie(c, "Set-Cookie", sessionCookie.serialize())
-            return c.redirect(`/?user=${user.userId}`, 302)
-
-
-            // const password_hash = await bunPassword.hash(password)
-            // const { data: user } = await entity.create({
-            //     first_name,
-            //     last_name,
-            //     email,
-            //     password_hash
-            // }).go()
-
-            // const session = await auth.createSession(user.userId, {});
-            // const sessionCookie = auth.createSessionCookie(session.id);
-
-            // setCookie(c, "Set-Cookie", sessionCookie.serialize())
-            // return c.redirect(`/?user=${user.userId}`, 302)
+            return c.json({
+                token: session.id
+            }, 200)
 
         } catch (e) {
             return c.json(e, 400)

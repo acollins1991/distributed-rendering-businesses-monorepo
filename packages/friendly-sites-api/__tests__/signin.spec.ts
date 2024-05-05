@@ -41,17 +41,14 @@ describe("/signin", () => {
                 }
             })
 
-            // console.log(await entity.scan.go())
-
             const { data: [session] } = await sessionEntity.scan.where(({ userId }, { eq }) => eq(userId, user.userId)).go()
 
-            // console.log(await res.json())
+            expect(res.status).toBe(200)
 
-            expect(res.status).toBe(302)
+            const json = await res.json()
+
+            expect(json.token).toBe(session.sessionId)
             expect(session).toBeTruthy()
-
-            // const json = await res.json()
-            // expect(json.first_name).toBe(user.first_name)
 
         })
     })
