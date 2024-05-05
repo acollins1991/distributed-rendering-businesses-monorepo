@@ -3,10 +3,9 @@ import type { LambdaBindings } from '../types'
 import validateLambdaEvent from '../utils/validateLambdaEvent'
 import { entity } from '../entities/user'
 import { z } from 'zod'
-import { passwordStrength } from 'check-password-strength'
+import { passwordStrength as passwordStrengthCheck } from 'check-password-strength'
 import { password as bunPassword } from 'bun'
 import { auth } from '../auth'
-import { setCookie } from 'hono/cookie'
 import { add } from 'date-fns'
 
 const signup = new Hono<{ Bindings: LambdaBindings }>()
@@ -32,11 +31,34 @@ signup.post(
             password
         } = JSON.parse(c.env.event.body as string) as BodySchemaType
 
+        const passwordStrength = passwordStrengthCheck(password, [
+            {
+                id: 0,
+                value: "Too weak",
+                minDiversity: 0,
+                minLength: 0
+            },
+            {
+                id: 1,
+                value: "Valid",
+                minDiversity: 2,
+                minLength: 16
+            },
+        ])
+
         // check password strength
-        if (["Too weak", "Weak"].includes(passwordStrength(password).value)) {
+        if (passwordStrength.value === "Too weak") {
             return c.json({
-                meta: passwordStrength(password),
+                // meta: passwordStrength(password),
                 message: 'Password too weak'
+            }, 400)
+        }
+
+        // check if user with this email already exists
+        const { data: [existingUserAccountFromEmail] } = await entity.query.email({ email }).go()
+        if (existingUserAccountFromEmail) {
+            return c.json({
+                message: 'Account with this email already exists'
             }, 400)
         }
 
