@@ -38,8 +38,7 @@ const schema = createSchema({
         },
         password_hash: {
             type: 'string',
-            required: true,
-            hidden: true
+            required: true
         },
         created_at: {
             type: "number",
@@ -66,6 +65,13 @@ const schema = createSchema({
                 field: "sk",
                 composite: [],
             },
+        },
+        email: {
+            index: "gsi1pk-gsi1sk-index",
+            pk: {
+                field: "gsi1pk",
+                composite: ["email"]
+            }
         }
     }
 })

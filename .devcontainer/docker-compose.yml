@@ -11,7 +11,7 @@ services:
     command: /bin/sh -c "while sleep 1000; do :; done"
     depends_on:
       - localstack
-      - cognito-local
+      # - cognito-local
 
   localstack:
     # LocalStack container
@@ -25,7 +25,7 @@ services:
     #   - ./localstack-setup.sh:/etc/localstack/init/ready.d/script.sh
     #   - ./friendly-sites-table-schema.json:/etc/friendly-sites-table-schema.json
 
-  cognito-local:
-    image: jagregory/cognito-local:3.23.3
-    ports:
-      - 9229:9229
+    # cognito-local:
+    #   image: jagregory/cognito-local:3.23.3
+    #   ports:
+    #     - 9229:9229

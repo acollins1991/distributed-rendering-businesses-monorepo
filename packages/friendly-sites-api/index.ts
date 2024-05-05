@@ -5,6 +5,7 @@ import type { LambdaBindings } from './types'
 import sites from './routes/sites'
 import teams from './routes/teams'
 import signup from './routes/signup'
+import signin from './routes/signin'
 
 const app = new Hono<{ Bindings: LambdaBindings }>()
 
@@ -12,6 +13,7 @@ const app = new Hono<{ Bindings: LambdaBindings }>()
 app.route("/sites", sites)
 app.route("/teams", teams)
 app.route("/signup", signup)
+app.route('/signin', signin)
 
 type AppType = typeof app
 const client = hc<AppType>('http://localhost:8787/')

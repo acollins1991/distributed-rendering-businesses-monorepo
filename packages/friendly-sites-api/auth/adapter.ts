@@ -106,17 +106,22 @@ export class DynamoDBAdapter implements Adapter {
     }
 
     public async setSession(session: DatabaseSession): Promise<void> {
-        await sessionEntity.put({
+        await sessionEntity.create({
             sessionId: session.id,
             userId: session.userId,
             // set expires_at to time set by options into the future
-            expires_at: add(Date.now(), this.options.expiration_duration as Duration).getTime()
+            expires_at: session.expiresAt?.getTime() ?? add(Date.now(), this.options.expiration_duration as Duration).getTime()
         }).go()
     }
 
+    // TODO: currently deletes all expired sessions for all users. Is this right?
+    // TODO: Uses a scan to get expired sessions. Must be a better way
     public async deleteExpiredSessions(): Promise<void> {
-        await sessionEntity.scan.where(({ expires_at }, { gt }) => `
-            ${gt(expires_at, Date.now())}
+        const { data: allSexpiredSessions } = await sessionEntity.scan.where(({ expires_at }, { lt }) => `
+            ${lt(expires_at, Date.now())}
         `).go()
+
+        // delete all expired sessions
+        await sessionEntity.delete(allSexpiredSessions.map(session => ({ sessionId: session.sessionId }))).go()
     }
 }

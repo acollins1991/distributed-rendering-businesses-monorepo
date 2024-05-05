@@ -3,7 +3,7 @@ import { table, client } from "../db";
 
 const schema = createSchema({
     model: {
-        entity: 'entity',
+        entity: 'session',
         version: '1',
         service: 'teams',
     },
@@ -49,10 +49,14 @@ const schema = createSchema({
             }
         },
         user_sessions: {
-            index: "gsi1",
+            index: "gsi1pk-gsi1sk-index",
             pk: {
-                field: "userId",
+                field: "gsi1pk",
                 composite: ["userId"],
+            },
+            sk: {
+                field: "gsi1sk",
+                composite: []
             }
         }
     }

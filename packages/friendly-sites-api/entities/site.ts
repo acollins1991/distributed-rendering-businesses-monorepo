@@ -3,7 +3,7 @@ import { client, table } from "../db/index"
 
 const schema = createSchema({
     model: {
-        entity: 'entity',
+        entity: 'site',
         version: '1',
         service: 'sites',
     },
