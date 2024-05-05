@@ -7,6 +7,7 @@ import { passwordStrength } from 'check-password-strength'
 import { password as bunPassword } from 'bun'
 import { auth } from '../auth'
 import { setCookie } from 'hono/cookie'
+import { add } from 'date-fns'
 
 const signup = new Hono<{ Bindings: LambdaBindings }>()
 
@@ -48,11 +49,15 @@ signup.post(
                 password_hash
             }).go()
 
-            const session = await auth.createSession(user.userId, {});
-            const sessionCookie = auth.createSessionCookie(session.id);
+            const session = await auth.createSession(user.userId, {
+                expires_at: add(Date.now(), {
+                    months: 1
+                }).getTime()
+            });
 
-            setCookie(c, "Set-Cookie", sessionCookie.serialize())
-            return c.redirect(`/?user=${user.userId}`, 302)
+            return c.json({
+                token: session.id
+            }, 200)
 
         } catch (e) {
             return c.json(e, 400)

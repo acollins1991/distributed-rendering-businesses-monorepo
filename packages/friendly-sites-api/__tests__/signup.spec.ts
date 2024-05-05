@@ -38,7 +38,7 @@ describe("/signup endpoint", () => {
             expect(res.status).toBe(400)
             expect((await res.json()).message).toBe("Password too weak")
         })
-        test('successful request creates user and redirects', async () => {
+        test('successful request creates user and session', async () => {
             const first_name = faker.person.firstName()
             const last_name = faker.person.firstName()
             const email = faker.internet.email({
@@ -68,15 +68,19 @@ describe("/signup endpoint", () => {
             })
 
             // returns redirect
-            expect(res.status).toBe(302)
+            expect(res.status).toBe(200)
 
             // get user with email
             const { data: users } = await userEntity.scan.where(({ email: recordEmail }, { eq }) => eq(recordEmail, email)).go()
             const targetUser = users[0]
             expect(targetUser.email).toBe(email)
-            // 
+
+            // returns token, which is bearer token for user
+            const json = await res.json()
             const { data: sessions } = await sessionEntity.scan.go()
-            expect(sessions.find(session => session.userId === targetUser.userId)).toBeTruthy()
+            const targetSession = sessions.find(session => session.sessionId === json.token)
+            expect(sessions.find(session => session.sessionId === json.token)).toBeTruthy()
+            expect(targetSession?.userId).toBe(targetUser.userId)
         })
     })
 })
