@@ -1,5 +1,6 @@
 import { Entity, createSchema, type EntityItem } from "electrodb";
 import { table, client } from "../db";
+import { generateIdFromEntropySize } from "lucia";
 
 const schema = createSchema({
     model: {
@@ -10,7 +11,8 @@ const schema = createSchema({
     attributes: {
         sessionId: {
             type: "string",
-            default: () => crypto.randomUUID(),
+            // set id using generateIdFromEntropySize to improve security
+            default: () => generateIdFromEntropySize(50),
             readOnly: true
         },
         userId: {
