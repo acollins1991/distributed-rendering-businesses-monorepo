@@ -1,7 +1,6 @@
 import { describe, test, expect } from "bun:test"
 import { app } from ".."
 import { faker } from "@faker-js/faker"
-import { auth } from "../auth"
 import { entity as userEntity } from "../entities/user"
 import { entity as sessionEntity } from "../entities/sessions"
 
