@@ -91,11 +91,6 @@ resetpassword.patch(
         return c.json({
             message: 'Password updated'
         }, 200)
-
-        // const { data: [user] } = await userEntity.query.email({ email: resetToken?.userEmail }).go()
-        // return c.json({
-        //     message: `If an account exists for ${email} and email will be sent with a reset link`
-        // }, 200)
     })
 
 export default resetpassword
