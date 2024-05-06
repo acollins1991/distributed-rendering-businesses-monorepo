@@ -6,6 +6,7 @@ import sites from './routes/sites'
 // import teams from './routes/teams'
 import signup from './routes/signup'
 import signin from './routes/signin'
+import signout from './routes/signout'
 
 const app = new Hono<ApiContext>()
 
@@ -14,6 +15,7 @@ app.route("/sites", sites)
 // app.route("/teams", teams) teams to be implemented later
 app.route("/signup", signup)
 app.route('/signin', signin)
+app.route("/signout", signout)
 
 type AppType = typeof app
 const client = hc<AppType>('http://localhost:8787/')

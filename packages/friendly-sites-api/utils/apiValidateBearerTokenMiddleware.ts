@@ -1,15 +1,10 @@
 import type { Context } from "hono";
-import type { LambdaBindings } from "../types";
+import type { ApiContext, LambdaBindings } from "../types";
 import { createMiddleware } from 'hono/factory'
 import validateBearerToken from "./validateBearerToken";
 import type { User } from "lucia";
 
-const apiValidateBearerTokenMiddleware = createMiddleware(async (c: Context<{
-    Bindings: LambdaBindings,
-    Variables: {
-        user?: User
-    }
-}>, next) => {
+const apiValidateBearerTokenMiddleware = createMiddleware(async (c: Context<ApiContext>, next) => {
     const token = c.env.event.headers?.authorization?.replace('Bearer ', '')
     if (!token) {
         return c.json({
@@ -26,6 +21,7 @@ const apiValidateBearerTokenMiddleware = createMiddleware(async (c: Context<{
     }
 
     c.set("user", user)
+    c.set("token", token)
 
     await next()
 })

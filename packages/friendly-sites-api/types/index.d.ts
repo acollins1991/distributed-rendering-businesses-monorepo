@@ -3,6 +3,7 @@ import type { Context, Env } from 'hono';
 import type { LambdaEvent, LambdaContext } from 'hono/aws-lambda'
 import type { z } from 'zod';
 import type { Site } from '../entities/site';
+import type { Session } from 'lucia';
 
 export type LambdaBindings = {
     // Unfortunately can't use LambdaEvent as it also includes ALBEvent which is not compatible
@@ -14,7 +15,8 @@ export type ApiContext = {
     Bindings: LambdaBindings,
     Variables: {
         user?: User,
-        site?: Site
+        site?: Site,
+        token?: Session["id"]
     }
 }
 
