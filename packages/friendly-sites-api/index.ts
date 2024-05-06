@@ -1,17 +1,17 @@
 import { hc } from 'hono/client'
 import { Hono } from 'hono'
 import { handle } from 'hono/aws-lambda'
-import type { LambdaBindings } from './types'
+import type { ApiContext } from './types'
 import sites from './routes/sites'
-import teams from './routes/teams'
+// import teams from './routes/teams'
 import signup from './routes/signup'
 import signin from './routes/signin'
 
-const app = new Hono<{ Bindings: LambdaBindings }>()
+const app = new Hono<ApiContext>()
 
 // sites
 app.route("/sites", sites)
-app.route("/teams", teams)
+// app.route("/teams", teams) teams to be implemented later
 app.route("/signup", signup)
 app.route('/signin', signin)
 

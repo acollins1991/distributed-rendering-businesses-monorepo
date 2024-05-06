@@ -1,13 +1,9 @@
-import type { Context, Input, Next, Env, MiddlewareHandler, ValidationTargets, } from "hono";
+import type { Context, Input, Next, MiddlewareHandler, ValidationTargets, } from "hono";
 import { } from "hono/validator"
 import type { ZodSchema, z } from "zod";
-import type { LambdaBindings } from "../types";
+import type { EnvWithLambdaBindings } from "../types";
 
 type HasUndefined<T> = undefined extends T ? true : false
-
-type EnvWithLambdaBindings = Env & {
-    Bindings: LambdaBindings
-}
 
 type LimitedValidationTargets = Pick<ValidationTargets, 'json' | 'query'>
 

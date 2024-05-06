@@ -36,6 +36,14 @@ const schema = createSchema({
                 }
             }
         },
+        sites: {
+            type: 'list',
+            default: () => [],
+            items: {
+                type: 'string',
+                required: true,
+            }
+        },
         password_hash: {
             type: 'string',
             required: true

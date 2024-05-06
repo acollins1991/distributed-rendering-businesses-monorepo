@@ -1,4 +1,4 @@
-import { test, describe, expect } from "bun:test"
+import { test, describe, expect, beforeAll } from "bun:test"
 import { app } from ".."
 import { entity } from "../entities/site"
 import { mockDeep } from "vitest-mock-extended"
@@ -6,13 +6,23 @@ import type { LambdaBindings } from "../types"
 import createUserFactory from "../factories/User"
 import { createHostedZone } from "../utils/manageHostedZone"
 import { friendlySitesDomainGenerator } from "../utils/friendlySitesDomainGenerator"
+import type { Session } from "lucia"
+import type { User } from "../entities/user"
+import { entity as userEntity } from "../entities/user"
 
 describe("/sites endpoints", () => {
+
+    let databaseUser: User;
+    let bearerToken: Session["id"];
+
+    beforeAll(async () => {
+        const { session, user } = await createUserFactory()
+        databaseUser = user
+        bearerToken = session.id
+    })
+
     describe("POST", () => {
         test('request without name fails', async () => {
-            const teamId = crypto.randomUUID()
-            const authUser = createUserFactory()
-
             const res = await app.request("/sites", {
                 method: "POST",
                 headers: {
@@ -21,58 +31,18 @@ describe("/sites endpoints", () => {
                 body: JSON.stringify({})
             }, {
                 event: {
-                    body: JSON.stringify({
-                        teamId
-                    }),
-                    requestContext: {
-                        authorizer: {
-                            claims: {
-                                sub: authUser.id
-                            }
-                        }
+                    body: JSON.stringify({}),
+                    headers: {
+                        authorization: `Bearer ${bearerToken}`
                     }
                 }
             })
 
             expect(res.status).toBe(400)
         })
-        test('request without teamId fails', async () => {
-            const siteName = 'Tesing Site ' + crypto.randomUUID()
-            const authUser = createUserFactory()
 
-            const res = await app.request("/sites", {
-                method: "POST",
-                headers: {
-                    "content-type": "application/json"
-                },
-                body: JSON.stringify({})
-            }, {
-                event: {
-                    body: JSON.stringify({
-                        name: siteName
-                    }),
-                    requestContext: {
-                        authorizer: {
-                            claims: {
-                                sub: authUser.id
-                            }
-                        }
-                    }
-                }
-            })
-
-            expect(res.status).toBe(400)
-        })
         test('creates a new site record', async () => {
             const siteName = 'Tesing Site ' + crypto.randomUUID()
-            const teamId = crypto.randomUUID()
-            const authUser = createUserFactory()
-
-            const env = mockDeep<LambdaBindings>()
-            env.event.body = JSON.stringify({
-                name: siteName,
-                teamId
-            })
 
             const res = await app.request("/sites", {
                 method: "POST",
@@ -84,14 +54,9 @@ describe("/sites endpoints", () => {
                 event: {
                     body: JSON.stringify({
                         name: siteName,
-                        teamId
                     }),
-                    requestContext: {
-                        authorizer: {
-                            claims: {
-                                sub: authUser.id
-                            }
-                        }
+                    headers: {
+                        authorization: `Bearer ${bearerToken}`
                     }
                 }
             })
@@ -99,24 +64,20 @@ describe("/sites endpoints", () => {
             // check response
             expect(res.status).toBe(200)
 
-            const siteRecord = await entity.find({ name: siteName, teamId }).go()
+            const siteRecord = await entity.find({ name: siteName }).go()
 
             expect(siteRecord.data[0].name).toBe(siteName)
             expect(siteRecord.data[0].hosted_zone).toBeString()
         })
     })
+
     describe("PATCH", () => {
-        test('updates the site record name', async () => {
 
-            const authUser = createUserFactory()
-
+        test('site id must be in user record for successful update', async () => {
             // preexisting setup hosted zone
             const hostedZone = await createHostedZone("dummydomain.co.uk")
-
             const siteName = 'Tesing Site ' + crypto.randomUUID()
-            const teamId = crypto.randomUUID()
-
-            const { siteId } = await entity.create({ name: siteName, teamId, domain: 'dummydomain', hosted_zone: hostedZone.HostedZone?.Id as string }).go().then(res => res.data)
+            const { siteId } = await entity.create({ name: siteName, domain: 'dummydomain', hosted_zone: hostedZone.HostedZone?.Id as string }).go().then(res => res.data)
 
             // expect item to exist
             expect((await entity.get({ siteId }).go()).data).toBeTruthy()
@@ -125,8 +86,7 @@ describe("/sites endpoints", () => {
             const newSiteName = 'Tesing Site ' + crypto.randomUUID()
             const env = mockDeep<LambdaBindings>()
             env.event.body = JSON.stringify({
-                name: siteName,
-                teamId
+                name: siteName
             })
             const res = await app.request(`/sites/${siteId}`, {
                 method: "PATCH",
@@ -139,12 +99,41 @@ describe("/sites endpoints", () => {
                     body: JSON.stringify({
                         name: newSiteName
                     }),
-                    requestContext: {
-                        authorizer: {
-                            claims: {
-                                sub: authUser.id
-                            }
-                        }
+                    headers: {
+                        authorization: `Bearer ${bearerToken}`
+                    }
+                }
+            })
+
+            expect(res.status).toBe(403)
+        })
+
+        test('updates the site record name', async () => {
+            // preexisting setup hosted zone
+            const hostedZone = await createHostedZone("dummydomain.co.uk")
+            const siteName = 'Tesing Site ' + crypto.randomUUID()
+            const { siteId } = await entity.create({ name: siteName, domain: 'dummydomain', hosted_zone: hostedZone.HostedZone?.Id as string }).go().then(res => res.data)
+            // add siteId to user
+            await userEntity.update({ userId: databaseUser.userId }).append({ sites: [siteId] }).go()
+
+            // expect item to exist
+            expect((await entity.get({ siteId }).go()).data).toBeTruthy()
+
+            // update item
+            const newSiteName = 'Tesing Site ' + crypto.randomUUID()
+            const res = await app.request(`/sites/${siteId}`, {
+                method: "PATCH",
+                headers: {
+                    "content-type": "application/json"
+                },
+                body: JSON.stringify({})
+            }, {
+                event: {
+                    body: JSON.stringify({
+                        name: newSiteName
+                    }),
+                    headers: {
+                        authorization: `Bearer ${bearerToken}`
                     }
                 }
             })
@@ -156,26 +145,20 @@ describe("/sites endpoints", () => {
 
         test('updates the site record domain', async () => {
 
-            const authUser = createUserFactory()
-
             // preexisting setup hosted zone
             const hostedZone = await createHostedZone("dummydomain.co.uk")
 
             const siteName = 'Tesing Site ' + crypto.randomUUID()
-            const teamId = crypto.randomUUID()
 
-            const { siteId } = await entity.create({ name: siteName, teamId, domain: "dummydomain.co.uk", hosted_zone: hostedZone.HostedZone?.Id as string }).go().then(res => res.data)
+            const { siteId } = await entity.create({ name: siteName, domain: "dummydomain.co.uk", hosted_zone: hostedZone.HostedZone?.Id as string }).go().then(res => res.data)
+            // add siteId to user
+            await userEntity.update({ userId: databaseUser.userId }).append({ sites: [siteId] }).go()
 
             // expect item to exist
             expect((await entity.get({ siteId }).go()).data).toBeTruthy()
 
             // update domain
             const newDomain = friendlySitesDomainGenerator()
-            const env = mockDeep<LambdaBindings>()
-            env.event.body = JSON.stringify({
-                name: siteName,
-                teamId
-            })
             const res = await app.request(`/sites/${siteId}`, {
                 method: "PATCH",
                 headers: {
@@ -187,12 +170,8 @@ describe("/sites endpoints", () => {
                     body: JSON.stringify({
                         domain: newDomain
                     }),
-                    requestContext: {
-                        authorizer: {
-                            claims: {
-                                sub: authUser.id
-                            }
-                        }
+                    headers: {
+                        authorization: `Bearer ${bearerToken}`
                     }
                 }
             })
@@ -204,14 +183,10 @@ describe("/sites endpoints", () => {
     })
     describe('DELETE', () => {
         test('deletes the site record', async () => {
-
-
-            const authUser = createUserFactory()
-
             const siteName = 'Tesing Site ' + crypto.randomUUID()
-            const teamId = crypto.randomUUID()
-
-            const { siteId } = await entity.create({ name: siteName, teamId, domain: 'dummydomain', hosted_zone: 'dummyhostedzoneid' }).go().then(res => res.data)
+            const { siteId } = await entity.create({ name: siteName, domain: 'dummydomain', hosted_zone: 'dummyhostedzoneid' }).go().then(res => res.data)
+            // add siteId to user
+            await userEntity.update({ userId: databaseUser.userId }).append({ sites: [siteId] }).go()
 
             // expect item to exist
             expect((await entity.get({ siteId }).go()).data).toBeTruthy()
@@ -224,12 +199,8 @@ describe("/sites endpoints", () => {
                 body: JSON.stringify({})
             }, {
                 event: {
-                    requestContext: {
-                        authorizer: {
-                            claims: {
-                                sub: authUser.id
-                            }
-                        }
+                    headers: {
+                        authorization: `Bearer ${bearerToken}`
                     }
                 }
             })
@@ -242,12 +213,10 @@ describe("/sites endpoints", () => {
 
     describe('GET site record', () => {
         test('deletes the site record', async () => {
-            const authUser = createUserFactory()
-
             const siteName = 'Tesing Site ' + crypto.randomUUID()
-            const teamId = crypto.randomUUID()
-
-            const { siteId } = await entity.create({ name: siteName, teamId, domain: 'dummydomain', hosted_zone: 'dummyhostedzoneid' }).go().then(res => res.data)
+            const { siteId } = await entity.create({ name: siteName, domain: 'dummydomain', hosted_zone: 'dummyhostedzoneid' }).go().then(res => res.data)
+            // add siteId to user
+            await userEntity.update({ userId: databaseUser.userId }).append({ sites: [siteId] }).go()
 
             // expect item to exist
             expect((await entity.get({ siteId }).go()).data).toBeTruthy()
@@ -260,19 +229,15 @@ describe("/sites endpoints", () => {
                 body: JSON.stringify({})
             }, {
                 event: {
-                    requestContext: {
-                        authorizer: {
-                            claims: {
-                                sub: authUser.id
-                            }
-                        }
+                    headers: {
+                        authorization: `Bearer ${bearerToken}`
                     }
                 }
             })
 
             expect(res.status).toBe(200)
             const json = await res.json()
-            expect(json.data.siteId).toBe(siteId)
+            expect(json.siteId).toBe(siteId)
         })
     })
 })

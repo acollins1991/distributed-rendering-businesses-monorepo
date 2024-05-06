@@ -1,11 +1,21 @@
 import type { Entity, EntityItem } from 'electrodb';
+import type { Context, Env } from 'hono';
 import type { LambdaEvent, LambdaContext } from 'hono/aws-lambda'
 import type { z } from 'zod';
+import type { Site } from '../entities/site';
 
 export type LambdaBindings = {
     // Unfortunately can't use LambdaEvent as it also includes ALBEvent which is not compatible
     event: LambdaEvent,
     context: LambdaContext
+}
+
+export type ApiContext = {
+    Bindings: LambdaBindings,
+    Variables: {
+        user?: User,
+        site?: Site
+    }
 }
 
 export type TypeToZod<T> = {
@@ -15,3 +25,7 @@ export type TypeToZod<T> = {
 };
 
 export type EntityToZod<E extends Entity> = TypeToZod<EntityItem<E>>
+
+export type EnvWithLambdaBindings = Env & {
+    Bindings: LambdaBindings
+}

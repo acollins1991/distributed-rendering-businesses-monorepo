@@ -1,18 +1,54 @@
 import { Hono } from 'hono'
 import type { Context, Next } from "hono"
-import type { LambdaBindings } from '../types'
+import type { ApiContext, LambdaBindings } from '../types'
 import { ZodSchema, z } from 'zod'
 import { getAuthUserFromRequestEvent } from '../utils/getAuthUserFromRequestEvent'
 import { friendlySitesDomainGenerator } from '../utils/friendlySitesDomainGenerator'
 import { createHostedZone, deleteHostedZone } from '../utils/manageHostedZone'
-import { entity } from '../entities/site'
+import { entity, type Site } from '../entities/site'
 import validateLambdaEvent from '../utils/validateLambdaEvent'
+import apiValidateBearerTokenMiddleware from '../utils/apiValidateBearerTokenMiddleware'
+import type { User } from 'lucia'
+import { createMiddleware } from 'hono/factory'
 
-const sites = new Hono<{ Bindings: LambdaBindings }>()
+function protectSiteRecordMiddleware(failedMessage: string) {
+    return createMiddleware(async (c: Context<ApiContext>, next) => {
+
+        const user = c.get("user") as User
+        const siteId = c.req.param('siteId') as string
+
+        if (!user || !user.sites?.includes(siteId)) {
+            return c.json({
+                message: failedMessage
+            }, 403)
+        }
+
+        await next()
+    })
+}
+
+const setSiteRecordMiddleware = createMiddleware(async (c: Context<ApiContext>, next) => {
+    const siteId = c.req.param('siteId') as string
+    const { data: site } = await entity.get({ siteId }).go()
+
+    if (!site) {
+        return c.json({
+            message: "Cannot find site record"
+        })
+    }
+
+    c.set("site", site)
+
+    await next()
+})
+
+const sites = new Hono<ApiContext>()
+
+// protect these routes
+sites.use("*", apiValidateBearerTokenMiddleware)
 
 // /sites POST
 const BodySchema = z.object({
-    teamId: z.string(),
     name: z.string(),
     domain: z.string().optional()
 })
@@ -23,26 +59,15 @@ sites.post(
         bodySchema: BodySchema
     }),
     async (c) => {
-
-        const user = getAuthUserFromRequestEvent(c.env.event)
-
-        if (typeof user !== 'string') {
-            return c.json({
-                message: 'Not authorised'
-            }, 403)
-        }
-
-        const { teamId, name, domain: reqDomain } = JSON.parse(c.env.event.body as string) as BodySchemaType
+        const { name, domain: reqDomain } = JSON.parse(c.env.event.body as string) as BodySchemaType
 
         const domain = reqDomain ? reqDomain : friendlySitesDomainGenerator()
         const hostedZone = await createHostedZone(domain)
 
         const team = await entity.create({
-            teamId,
             name,
             domain,
             hosted_zone: hostedZone.HostedZone?.Id as string
-
         }).go()
 
         return c.json(team.data, 200)
@@ -50,8 +75,8 @@ sites.post(
 
 // /sites PATCH
 const PatchBodySchema = z.object({
-    name: z.string(),
-    domain: z.string()
+    name: z.string().optional(),
+    domain: z.string().optional()
 }).partial()
 type PatchBodySchemaType = z.infer<typeof PatchBodySchema>;
 sites.patch(
@@ -59,28 +84,15 @@ sites.patch(
     validateLambdaEvent({
         bodySchema: PatchBodySchema
     }),
+    protectSiteRecordMiddleware('User cannot edit site record'),
+    setSiteRecordMiddleware,
     async (c) => {
-
-        const user = getAuthUserFromRequestEvent(c.env.event)
-
-        if (typeof user !== 'string') {
-            return c.json({
-                message: 'Not authorised'
-            }, 403)
-        }
 
         const patchObject = JSON.parse(c.env.event.body as string) as PatchBodySchemaType
 
         const siteId = c.req.param('siteId')
 
-
-        const { data: existingRecord } = await entity.get({ siteId }).go()
-
-        if (!existingRecord) {
-            return c.json({
-                message: `Site ${siteId} record not found`
-            }, 403)
-        }
+        const existingRecord = c.get("site") as Site
 
         const updatedRecordCommand = entity.patch({ siteId })
             .set(patchObject)
@@ -104,39 +116,23 @@ sites.patch(
 // /sites DELETE
 sites.delete(
     "/:siteId",
+    protectSiteRecordMiddleware('User cannot delete site record'),
     async (c) => {
-
-        const user = getAuthUserFromRequestEvent(c.env.event)
-
-        if (typeof user !== 'string') {
-            return c.json({
-                message: 'Not authorised'
-            }, 403)
-        }
-
         const siteId = c.req.param('siteId')
-        const team = await entity.delete({ siteId }).go()
+        const site = await entity.delete({ siteId }).go()
 
-        return c.json(team, 200)
+        return c.json(site, 200)
     })
 
-// /sites DELETE
+// /sites GET
 sites.get(
     "/:siteId",
+    protectSiteRecordMiddleware('User cannot get site record'),
+    setSiteRecordMiddleware,
     async (c) => {
+        const site = c.get("site") as Site
 
-        const user = getAuthUserFromRequestEvent(c.env.event)
-
-        if (typeof user !== 'string') {
-            return c.json({
-                message: 'Not authorised'
-            }, 403)
-        }
-
-        const siteId = c.req.param('siteId')
-        const team = await entity.get({ siteId }).go()
-
-        return c.json(team, 200)
+        return c.json(site, 200)
     })
 
 

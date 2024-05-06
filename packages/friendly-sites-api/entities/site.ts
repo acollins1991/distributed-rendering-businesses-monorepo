@@ -1,4 +1,4 @@
-import { Entity, createSchema } from "electrodb";
+import { Entity, createSchema, type EntityItem } from "electrodb";
 import { client, table } from "../db/index"
 
 const schema = createSchema({
@@ -11,11 +11,6 @@ const schema = createSchema({
         siteId: {
             type: "string",
             default: () => crypto.randomUUID(),
-            readOnly: true
-        },
-        teamId: {
-            type: 'string',
-            required: true,
             readOnly: true
         },
         name: {
@@ -60,3 +55,5 @@ const schema = createSchema({
 })
 
 export const entity = new Entity(schema, { table, client },)
+
+export type Site = EntityItem<typeof entity>
