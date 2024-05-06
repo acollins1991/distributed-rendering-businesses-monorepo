@@ -7,6 +7,7 @@ import sites from './routes/sites'
 import signup from './routes/signup'
 import signin from './routes/signin'
 import signout from './routes/signout'
+import resetpassword from './routes/resetpassword'
 
 const app = new Hono<ApiContext>()
 
@@ -16,6 +17,7 @@ app.route("/sites", sites)
 app.route("/signup", signup)
 app.route('/signin', signin)
 app.route("/signout", signout)
+app.route("/passwordreset", resetpassword)
 
 type AppType = typeof app
 const client = hc<AppType>('http://localhost:8787/')

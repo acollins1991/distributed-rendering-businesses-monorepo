@@ -7,6 +7,7 @@ import { passwordStrength as passwordStrengthCheck } from 'check-password-streng
 import { password as bunPassword } from 'bun'
 import { auth } from '../auth'
 import { add } from 'date-fns'
+import getPasswordStrength from '../utils/getPasswordStrength'
 
 const signup = new Hono<{ Bindings: LambdaBindings }>()
 
@@ -31,20 +32,7 @@ signup.post(
             password
         } = JSON.parse(c.env.event.body as string) as BodySchemaType
 
-        const passwordStrength = passwordStrengthCheck(password, [
-            {
-                id: 0,
-                value: "Too weak",
-                minDiversity: 0,
-                minLength: 0
-            },
-            {
-                id: 1,
-                value: "Valid",
-                minDiversity: 2,
-                minLength: 16
-            },
-        ])
+        const passwordStrength = getPasswordStrength(password)
 
         // check password strength
         if (passwordStrength.value === "Too weak") {
