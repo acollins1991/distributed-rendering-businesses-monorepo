@@ -1,3 +1,11 @@
+# Docs
+
+##
+
+DynamoDB UI runs at http://localhost:3421/
+
+--- ORIGINAL BUN DOCS ---
+
 # distributed-rendering-businesses-monorepo
 
 To install dependencies:

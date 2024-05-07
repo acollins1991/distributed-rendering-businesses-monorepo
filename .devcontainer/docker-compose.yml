@@ -29,3 +29,12 @@ services:
     #   image: jagregory/cognito-local:3.23.3
     #   ports:
     #     - 9229:9229
+
+  dynamodb-web-ui:
+    image: node:22.1.0-alpine
+    command: ["/bin/sh", "-c", "npm install -g dynamodb-admin && AWS_REGION=eu-west-1 AWS_ACCESS_KEY_ID=123 AWS_SECRET_ACCESS_KEY=123 DYNAMO_ENDPOINT=http://localstack:4566 PORT=3421 dynamodb-admin"]
+    ports:
+      # Map the port so you can access the API from the host machine
+      - 3421:3421
+    depends_on:
+      - localstack
