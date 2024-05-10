@@ -13,7 +13,7 @@ beforeAll(async () => {
     await $`aws --region=${region} --endpoint-url=${endpointUrl} dynamodb create-table --cli-input-json file://friendly-sites-api-table.json --table-name=${table} > /dev/null`;
 })
 
-// afterAll(async () => {
-//     // teardown table
-//     await $`aws --region=${region} --endpoint-url=${endpointUrl} dynamodb delete-table --table-name=${table} > /dev/null`;
-// })
+afterAll(async () => {
+    // teardown table
+    await $`aws --region=${region} --endpoint-url=${endpointUrl} dynamodb delete-table --table-name=${table} > /dev/null`;
+})

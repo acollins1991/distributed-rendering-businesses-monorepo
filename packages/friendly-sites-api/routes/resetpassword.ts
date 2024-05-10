@@ -4,7 +4,6 @@ import validateLambdaEvent from "../utils/validateLambdaEvent";
 import { z } from "zod";
 import { entity as userEntity } from "../entities/user";
 import { entity as resetTokenEntity } from "../entities/resettoken";
-import { isAfter } from "date-fns";
 import getPasswordStrength from "../utils/getPasswordStrength";
 import { auth } from "../auth";
 
