@@ -3,9 +3,6 @@ import { client, table } from "../packages/friendly-sites-api/db/index"
 import { CreateTableCommand, ListTablesCommand } from "@aws-sdk/client-dynamodb";
 import * as tableDefinition from "../friendly-sites-api-table.json"
 
-const region = process.env.LOCALSTACK_REGION
-const endpointUrl = process.env.LOCALSTACK_ENDPOINT
-
 async function ensureTableExists() {
     const listTablesCommand = new ListTablesCommand()
     const tables = await client.send(listTablesCommand)
