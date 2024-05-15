@@ -14,12 +14,6 @@ import { createMiddleware } from 'hono/factory'
 
 const app = new Hono<ApiContext>()
 
-// debuging
-app.use(createMiddleware(async (c, next) => {
-    console.log(c.event)
-    next()
-}))
-
 app.use("*", cors())
 
 app.route("/user", user)
@@ -33,8 +27,8 @@ app.route("/passwordreset", resetpassword)
 
 // type AppType = typeof app
 // const client = hc<AppType>('http://localhost:8787/')
-// export {
-//     app
-// }
+export {
+    app
+}
 
 export const handler = handle(app)

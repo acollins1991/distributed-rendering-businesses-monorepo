@@ -1,8 +1,7 @@
 import { Hono } from 'hono'
-import type { Context, Next } from "hono"
-import type { ApiContext, LambdaBindings } from '../types'
-import { ZodSchema, z } from 'zod'
-import { getAuthUserFromRequestEvent } from '../utils/getAuthUserFromRequestEvent'
+import type { Context } from "hono"
+import type { ApiContext } from '../types'
+import { z } from 'zod'
 import { friendlySitesDomainGenerator } from '../utils/friendlySitesDomainGenerator'
 import { createHostedZone, deleteHostedZone } from '../utils/manageHostedZone'
 import { entity, type Site } from '../entities/site'
@@ -10,6 +9,7 @@ import validateLambdaEvent from '../utils/validateLambdaEvent'
 import apiValidateBearerTokenMiddleware from '../utils/apiValidateBearerTokenMiddleware'
 import type { User } from 'lucia'
 import { createMiddleware } from 'hono/factory'
+import { entity as userEntity } from "../entities/user"
 
 function protectSiteRecordMiddleware(failedMessage: string) {
     return createMiddleware(async (c: Context<ApiContext>, next) => {
@@ -64,13 +64,21 @@ sites.post(
         const domain = reqDomain ? reqDomain : friendlySitesDomainGenerator()
         const hostedZone = await createHostedZone(domain)
 
-        const team = await entity.create({
-            name,
-            domain,
-            hosted_zone: hostedZone.HostedZone?.Id as string
-        }).go()
+        try {
+            const site = await entity.create({
+                name,
+                domain,
+                hosted_zone: hostedZone.HostedZone?.Id as string
+            }).go()
 
-        return c.json(team.data, 200)
+            // add new site id to the user record as ownership signal
+            const user = c.get("user") as User
+            await userEntity.patch({ userId: user.userId }).append({ sites: [site.data.siteId] }).go()
+
+            return c.json(site.data, 200)
+        } catch (e) {
+            return c.json(e, 500)
+        }
     })
 
 // /sites PATCH
@@ -89,12 +97,9 @@ sites.patch(
     async (c) => {
 
         const patchObject = JSON.parse(c.env.event.body as string) as PatchBodySchemaType
-
-        const siteId = c.req.param('siteId')
-
         const existingRecord = c.get("site") as Site
 
-        const updatedRecordCommand = entity.patch({ siteId })
+        const updatedRecordCommand = entity.patch({ siteId: existingRecord.siteId })
             .set(patchObject)
 
         // if domain has changed update with new zone

@@ -5,10 +5,11 @@
   ],
   "scripts": {
     "dynamodb-ui": "DYNAMO_ENDPOINT=http://localstack:4566 AWS_REGION=eu-west-1 AWS_ACCESS_KEY_ID=123 AWS_SECRET_ACCESS_KEY=123 dynamodb-admin",
-    "dashboard": "bun run dynamodb-ui & bun run index.tsx"
+    "dashboard": "bun run dynamodb-ui & bun run index.ts"
   },
   "devDependencies": {
     "@faker-js/faker": "^8.4.1",
+    "@serverless/event-mocks": "^1.1.1",
     "@types/bun": "latest",
     "vitest-mock-extended": "^1.3.1"
   },

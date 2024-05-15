@@ -42,7 +42,7 @@ describe("/sites endpoints", () => {
         })
 
         test('creates a new site record', async () => {
-            const siteName = 'Tesing Site ' + crypto.randomUUID()
+            const newSiteName = 'Tesing Site' + crypto.randomUUID()
 
             const res = await app.request("/sites", {
                 method: "POST",
@@ -53,7 +53,7 @@ describe("/sites endpoints", () => {
             }, {
                 event: {
                     body: JSON.stringify({
-                        name: siteName,
+                        name: newSiteName,
                     }),
                     headers: {
                         authorization: `Bearer ${bearerToken}`
@@ -64,10 +64,14 @@ describe("/sites endpoints", () => {
             // check response
             expect(res.status).toBe(200)
 
-            const siteRecord = await entity.find({ name: siteName }).go()
+            const siteRecord = await entity.scan.where(({ name }, { eq }) => eq(name, newSiteName)).go()
 
-            expect(siteRecord.data[0].name).toBe(siteName)
+            expect(siteRecord.data[0].name).toBe(newSiteName)
             expect(siteRecord.data[0].hosted_zone).toBeString()
+
+            // siteId should now be in the user record
+            const refreshedUserRecord = await userEntity.get({ userId: databaseUser.userId }).go()
+            expect(refreshedUserRecord.data?.sites).toContain(siteRecord.data[0].siteId)
         })
     })
 
