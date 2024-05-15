@@ -10,6 +10,7 @@ import apiValidateBearerTokenMiddleware from '../utils/apiValidateBearerTokenMid
 import type { User } from 'lucia'
 import { createMiddleware } from 'hono/factory'
 import { entity as userEntity } from "../entities/user"
+import { entity as templateEntity, type Template } from "../entities/template"
 
 function protectSiteRecordMiddleware(failedMessage: string) {
     return createMiddleware(async (c: Context<ApiContext>, next) => {
@@ -34,7 +35,7 @@ const setSiteRecordMiddleware = createMiddleware(async (c: Context<ApiContext>, 
     if (!site) {
         return c.json({
             message: "Cannot find site record"
-        })
+        }, 404)
     }
 
     c.set("site", site)
@@ -46,6 +47,8 @@ const sites = new Hono<ApiContext>()
 
 // protect these routes
 sites.use("*", apiValidateBearerTokenMiddleware)
+// sites targeting specific site inject site record to site var
+sites.use("/:siteId/*", setSiteRecordMiddleware)
 
 // /sites POST
 const BodySchema = z.object({
@@ -93,7 +96,6 @@ sites.patch(
         bodySchema: PatchBodySchema
     }),
     protectSiteRecordMiddleware('User cannot edit site record'),
-    setSiteRecordMiddleware,
     async (c) => {
 
         const patchObject = JSON.parse(c.env.event.body as string) as PatchBodySchemaType
@@ -133,11 +135,137 @@ sites.delete(
 sites.get(
     "/:siteId",
     protectSiteRecordMiddleware('User cannot get site record'),
-    setSiteRecordMiddleware,
     async (c) => {
         const site = c.get("site") as Site
 
         return c.json(site, 200)
+    })
+
+// setup nested templates
+
+const injectExistingTemplate = createMiddleware(async (c: Context<ApiContext>, next) => {
+    const templateId = c.req.param('templateId') as string
+    try {
+        const { data: template } = await templateEntity.get({ templateId }).go()
+
+        if (!template) {
+            return c.json({
+                message: "Template not found"
+            }, 404)
+        }
+
+        c.set("template", template)
+
+        await next()
+    } catch (e) {
+        return c.json(e, 500)
+    }
+})
+// inject existing template as template var, or if not found throw 404 with message
+sites.use("/:siteId/templates/:templateId/*", injectExistingTemplate)
+
+const TemplatePostBodySchema = z.object({
+    name: z.string()
+})
+type TemplatePostBodySchemaType = z.infer<typeof TemplatePostBodySchema>;
+sites.post(
+    "/:siteId/templates",
+    validateLambdaEvent({
+        bodySchema: BodySchema
+    }),
+    async (c) => {
+        const site = c.get("site") as Site
+        const { name } = JSON.parse(c.env.event.body as string) as TemplatePostBodySchemaType
+
+        try {
+
+            const { data: template } = await templateEntity.create({
+                name,
+                siteId: site.siteId
+            }).go()
+
+            return c.json(template, 200)
+        } catch (e) {
+            return c.json(e, 500)
+        }
+    })
+
+// list
+sites.get(
+    "/:siteId/templates",
+    async (c) => {
+        const site = c.get("site") as Site
+
+        const query = c.env.event.queryStringParameters ?? {}
+
+        const executionArgs = {
+            cursor: query.cursor ? query.cursor : null,
+            limit: query.perPage ? parseInt(query.perPage) : 10
+        }
+
+        try {
+            const { data: templates, cursor } = await templateEntity.query.bySiteId({ siteId: site.siteId }).go(executionArgs)
+            return c.json({
+                data: templates,
+                cursor: cursor,
+                links: {
+                    nextPage: `${c.req.path}?cursor=${cursor}`
+                }
+            }, 200)
+        } catch (e) {
+            return c.json(e, 500)
+        }
+    })
+
+sites.get(
+    "/:siteId/templates/:templateId",
+    async (c) => {
+        try {
+            const template = c.get("template") as Template
+            return c.json({
+                data: template
+            }, 200)
+        } catch (e) {
+            return c.json(e, 500)
+        }
+    })
+
+const TemplatePatchBodySchema = z.object({
+    name: z.string().optional()
+})
+type TemplatePatchBodySchemaType = z.infer<typeof TemplatePatchBodySchema>;
+sites.patch(
+    "/:siteId/templates/:templateId",
+    validateLambdaEvent({
+        bodySchema: TemplatePatchBodySchema
+    }),
+    async (c) => {
+        const { templateId } = c.get("template") as Template
+        const patchObject = JSON.parse(c.env.event.body as string) as TemplatePatchBodySchemaType
+        try {
+            const { data: template } = await templateEntity.patch({ templateId }).set(patchObject).go({ response: "all_new" })
+            return c.json({
+                data: template
+            }, 200)
+        } catch (e) {
+            console.log(e)
+            return c.json(e, 500)
+        }
+    })
+
+sites.delete(
+    "/:siteId/templates/:templateId",
+    async (c) => {
+        const { templateId } = c.get("template") as Template
+        try {
+            const { data: template } = await templateEntity.delete({ templateId }).go()
+            return c.json({
+                data: template
+            }, 200)
+        } catch (e) {
+            console.log(e)
+            return c.json(e, 500)
+        }
     })
 
 
