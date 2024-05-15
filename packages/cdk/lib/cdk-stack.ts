@@ -7,85 +7,66 @@
  */
 
 import * as cdk from "aws-cdk-lib";
-import { FunctionUrlAuthType } from "aws-cdk-lib/aws-lambda";
+import type { IFunction } from "aws-cdk-lib/aws-lambda";
+import * as lambda from 'aws-cdk-lib/aws-lambda';
 import { Construct } from "constructs";
 import path from "path"
 import * as apigw from 'aws-cdk-lib/aws-apigateway'
 
-import { BunFun } from "../constructs/BunFun"
+// build api handler outside cdk stack classes so we can await the build
+const bunFunction = await Bun.build({
+  entrypoints: [path.join(__dirname, '../../friendly-sites-api/index.ts')],
+  outdir: 'dist',
+  target: 'bun',
+  minify: true,
+  external: [
+    "@aws-sdk/*",
+    "@faker-js/faker",
+    "@types/aws-lambda",
+    "aws-lambda",
+    "check-password-strength",
+    "date-fns",
+    "electrodb",
+    "hono",
+    "io-ts",
+    "lucia",
+    "oslo",
+    "react",
+    "react-dom",
+    "ts-runtime",
+    "zod"
+  ]
+})
 
 export class BunCdkStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    const fn = new BunFun(this, 'BunFunction', {
-      entrypoint: path.join(__dirname, '../../friendly-sites-api/index.ts'),
-      handler: 'handler',
-      functionUrlAuthType: FunctionUrlAuthType.NONE,
-      bunConfig: {
-        target: "bun"
-      }
-    })
 
-    const api = new apigw.LambdaRestApi(this, 'myapi', {
-      handler: fn,
-    })
+    // const BunRuntimeLayerArn = 'arn:aws:lambda:eu-west-2:258587214769:layer:bun:1'
+    // const layer = lambda.LayerVersion.fromLayerVersionArn(
+    //   this,
+    //   'imported-BunRuntimeLayer',
+    //   BunRuntimeLayerArn
+    // )
 
-    new cdk.CfnOutput(this, "BunApiUrl", {
-      value: api.url ?? "Something went wrong with the deployment",
+    const fn: IFunction = new lambda.Function(this, 'HelloHandler', {
+      code: lambda.Code.fromAsset(path.dirname(bunFunction.outputs[0].path)),
+      handler: 'index.handler',
+      runtime: lambda.Runtime.PROVIDED_AL2,
+      // layers: [layer],
+      // architecture: lambda.Architecture.ARM_64,
     });
+
+
+    // console.log('creating api with function handler')
+    // const api = new apigw.LambdaRestApi(this, 'myapi', {
+    //   handler: fn,
+    // })
+
+    // console.log('creating cdk output')
+    // new cdk.CfnOutput(this, "BunApiUrl", {
+    //   value: api.url ?? "Something went wrong with the deployment",
+    // });
   }
 }
-
-// import * as cdk from 'aws-cdk-lib';
-// import { Construct } from 'constructs';
-// import * as sqs from 'aws-cdk-lib/aws-sqs';
-
-// export class CdkStack extends cdk.Stack {
-//   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
-//     super(scope, id, props);
-
-//     // The code that defines your stack goes here
-
-//     // example resource
-//     const queue = new sqs.Queue(this, 'CdkQueue', {
-//       visibilityTimeout: cdk.Duration.seconds(300)
-//     });
-//   }
-// }
-
-// import * as cdk from 'aws-cdk-lib'
-// import { Construct } from 'constructs'
-// import * as lambda from 'aws-cdk-lib/aws-lambda'
-// import * as apigw from 'aws-cdk-lib/aws-apigateway'
-// import { Code, LayerVersion, Runtime, Function, Architecture } from "aws-cdk-lib/aws-lambda";
-// import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs'
-// import path from "path"
-
-// export class MyAppStack extends cdk.Stack {
-//   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
-//     super(scope, id, props)
-
-//     const layer = LayerVersion.fromLayerVersionArn(
-//       this,
-//       "BunLayer",
-//       // Follow https://github.com/oven-sh/bun/tree/main/packages/bun-lambda#setup
-//       // and deploy the layer to your account
-//       // then get the ARN from the AWS Console under Lambda -> Layers
-//       "arn:aws:lambda:us-east-1:648568751601:layer:bun:2"
-//     );
-
-//     const fn = new NodejsFunction(this, 'lambda', {
-//       entry: path.join(__dirname, '../../friendly-sites-api/index.ts'),
-//       handler: 'handler',
-//       runtime: lambda.Runtime.NODEJS_20_X,
-//       depsLockFilePath: path.join(__dirname, '../../../yarn.lock')
-//     })
-//     fn.addFunctionUrl({
-//       authType: lambda.FunctionUrlAuthType.NONE,
-//     })
-//     new apigw.LambdaRestApi(this, 'myapi', {
-//       handler: fn,
-//     })
-//   }
-// }

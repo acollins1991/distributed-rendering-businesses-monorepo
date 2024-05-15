@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { Construct } from 'constructs';
-import type { FunctionUrlAuthType } from 'aws-cdk-lib/aws-lambda';
+import type { FunctionUrlAuthType, IFunction } from 'aws-cdk-lib/aws-lambda';
 import { Architecture, Code, Function, LayerVersion, Runtime } from 'aws-cdk-lib/aws-lambda';
 import * as Bun from 'bun';
 import { CfnOutput, Fn } from 'aws-cdk-lib';
@@ -9,10 +9,7 @@ import { AnyPrincipal, PolicyStatement } from 'aws-cdk-lib/aws-iam';
 export interface BunFunPropsBase {
     entrypoint: string
     handler: string
-    bunLayer?: string // in case you bring your own layer
-    bunConfig?: Omit<Bun.BuildConfig, 'entrypoints' | 'target'> & {
-        target: Bun.Target
-    }
+    external?: Bun.BuildConfig["external"]
 }
 
 export interface BunFunPropsWithFunctionUrl extends BunFunPropsBase {
@@ -34,24 +31,21 @@ export class BunFun extends Construct {
         (async () => {
             try {
                 let bunPath: string
-                if (props.bunConfig?.target === 'bun') {
-                    const bunFunctions = await Bun.build({
-                        entrypoints: [props.entrypoint],
-                        outdir: 'dist',
-                        target: 'bun',
-                        minify: true,
-                    })
-                    bunPath = path.dirname(bunFunctions.outputs[0].path)
-                }
-                else {
-                    bunPath = path.dirname(props.entrypoint)
-                }
+                const bunFunctions = await Bun.build({
+                    entrypoints: [props.entrypoint],
+                    outdir: 'dist',
+                    target: 'bun',
+                    minify: true,
+                    external: props.external ?? []
+                })
+                bunPath = path.dirname(bunFunctions.outputs[0].path)
 
-                const BunFunLayerArn = Fn.importValue('BunFunLayerArn') ?? props.bunLayer
+                // const BunFunLayerArn = Fn.importValue('BunFunLayerArn')
+                const BunRuntimeLayerArn = 'arn:aws:lambda:eu-west-2:258587214769:layer:bun:1'
                 const layer = LayerVersion.fromLayerVersionArn(
                     this,
-                    'imported-BunFunLayerVersion',
-                    BunFunLayerArn,
+                    'imported-BunRuntimeLayer',
+                    BunRuntimeLayerArn
                 )
 
                 const lambda = new Function(this, 'BunFunction', {
@@ -65,25 +59,9 @@ export class BunFun extends Construct {
                 lambda.addToRolePolicy(
                     new PolicyStatement({
                         actions: ['lambda:GetLayerVersion'],
-                        resources: [BunFunLayerArn],
+                        resources: [BunRuntimeLayerArn],
                     }),
                 )
-
-                if (props.functionsUrl) {
-                    lambda.addPermission('InvokeFunctionsUrl', {
-                        principal: new AnyPrincipal(),
-                        action: 'lambda:InvokeFunctionUrl',
-                        functionUrlAuthType: props.functionUrlAuthType,
-                    })
-
-                    const fnUrl = lambda.addFunctionUrl({
-                        authType: props.functionUrlAuthType,
-                    })
-
-                    new CfnOutput(this, `${props.handler}Url`, {
-                        value: fnUrl.url,
-                    })
-                }
 
                 return lambda
             }
