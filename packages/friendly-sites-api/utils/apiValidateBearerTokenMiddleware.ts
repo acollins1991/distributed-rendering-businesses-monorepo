@@ -1,8 +1,7 @@
 import type { Context } from "hono";
-import type { ApiContext, LambdaBindings } from "../types";
+import type { ApiContext } from "../types";
 import { createMiddleware } from 'hono/factory'
 import validateBearerToken from "./validateBearerToken";
-import type { User } from "lucia";
 
 const apiValidateBearerTokenMiddleware = createMiddleware(async (c: Context<ApiContext>, next) => {
     const token = c.env.event.headers?.authorization?.replace('Bearer ', '')

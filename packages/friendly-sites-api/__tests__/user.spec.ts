@@ -75,7 +75,9 @@ describe("/user", () => {
 
             expect(res.status).toBe(200)
             const json = await res.json()
-            expect(json.id).toBe(databaseUser.userId)
+            expect(json.userId).toBe(databaseUser.userId)
+            expect(json.first_name).toBe(newFirstName)
+            expect(json.email).toBe(newEmail)
 
             // check record has updated
             const { data: refreshedUserRecord } = await entity.get({ userId: databaseUser.userId }).go()

@@ -13,9 +13,7 @@ user.get(
     apiValidateBearerTokenMiddleware,
     async (c) => {
         try {
-
             const user = c.get("user") as User
-
             return c.json(user, 200)
 
         } catch (e) {
@@ -43,9 +41,11 @@ user.patch(
 
             const user = c.get("user") as User
 
-            const updatedUser = await entity.patch({ userId: user.userId }).set(patchObject).go()
+            const { data: updatedUser } = await entity.patch({ userId: user.userId }).set(patchObject).go({
+                response: "all_new"
+            })
 
-            return c.json(user, 200)
+            return c.json(updatedUser, 200)
 
         } catch (e) {
             return c.json(e, 400)
