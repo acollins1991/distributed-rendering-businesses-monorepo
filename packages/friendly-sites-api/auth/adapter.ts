@@ -114,8 +114,7 @@ export class DynamoDBAdapter implements Adapter {
         }).go()
     }
 
-    // TODO: currently deletes all expired sessions for all users. Is this right?
-    // TODO: Uses a scan to get expired sessions. Must be a better way
+    // TODO: setup cron job to trigger this
     public async deleteExpiredSessions(): Promise<void> {
         const { data: allSexpiredSessions } = await sessionEntity.scan.where(({ expires_at }, { lt }) => `
             ${lt(expires_at, Date.now())}

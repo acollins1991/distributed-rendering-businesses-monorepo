@@ -1,19 +1,26 @@
-// import { beforeAll, afterAll } from "bun:test"
-// import { $ } from "bun";
-// import { table } from "../packages/friendly-sites-api/db/index"
+import { beforeAll } from "bun:test"
+import { client, table } from "../packages/friendly-sites-api/db/index"
+import { CreateTableCommand, ListTablesCommand } from "@aws-sdk/client-dynamodb";
+import * as tableDefinition from "../friendly-sites-api-table.json"
 
-// const region = process.env.LOCALSTACK_REGION
-// const endpointUrl = process.env.LOCALSTACK_ENDPOINT
+const region = process.env.LOCALSTACK_REGION
+const endpointUrl = process.env.LOCALSTACK_ENDPOINT
 
-// console.log(region)
-// console.log(endpointUrl)
+async function ensureTableExists() {
+    const listTablesCommand = new ListTablesCommand()
+    const tables = await client.send(listTablesCommand)
 
-// beforeAll(async () => {
-//     // setup table
-//     await $`aws --region=${region} --endpoint-url=${endpointUrl} dynamodb create-table --cli-input-json file://friendly-sites-api-table.json --table-name=${table} > /dev/null`;
-// })
+    if (tables.TableNames?.length) {
+        return
+    }
 
-// afterAll(async () => {
-//     // teardown table
-//     await $`aws --region=${region} --endpoint-url=${endpointUrl} dynamodb delete-table --table-name=${table} > /dev/null`;
-// })
+    const createTableCommand = new CreateTableCommand({
+        TableName: table,
+        ...tableDefinition
+    })
+    return await client.send(createTableCommand)
+}
+
+beforeAll(async () => {
+    await ensureTableExists()
+})
