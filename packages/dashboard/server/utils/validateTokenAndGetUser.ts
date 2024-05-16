@@ -1,6 +1,7 @@
 import validateBearerToken from "./validateBearerToken";
+import type { H3Event } from "h3"
 
-export default async (event: any): Promise<
+export default async (event: H3Event): Promise<
   NonNullable<Awaited<ReturnType<typeof validateBearerToken>>
   >['user']> => {
   const token = event.headers.get('authorization')?.replace('Bearer ', '')

@@ -1,13 +1,16 @@
 <template>
-
-    Hello
+    <template v-if="user">
+        {{ user }}
+    </template>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 
+const user = ref()
+
 onMounted(() => {
-    fetch('http://localhost:8423/user')
+    const res = $fetch('/api/user')
 })
 
 </script>

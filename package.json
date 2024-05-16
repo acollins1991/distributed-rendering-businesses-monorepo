@@ -15,5 +15,10 @@
   },
   "peerDependencies": {
     "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "@nuxtjs/tailwindcss": "^6.12.0",
+    "@pinia/nuxt": "^0.5.1",
+    "pinia": "^2.1.7"
   }
 }

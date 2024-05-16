@@ -1,0 +1,3 @@
+<template>
+    <AppSignUpForm />
+</template>
