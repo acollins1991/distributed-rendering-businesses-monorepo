@@ -13,6 +13,7 @@ import path from "path"
 
 // @ts-ignore index file exists
 import html from "../index.html" with { type: "text" };
+import authenticate from './routes/authenticate'
 
 const app = new Hono()
 
@@ -42,8 +43,11 @@ apiServer.route("/signup", signup)
 apiServer.route('/signin', signin)
 apiServer.route("/signout", signout)
 apiServer.route("/passwordreset", resetpassword)
+apiServer.route("/authenticate", authenticate)
 
 app.route('/api', apiServer)
+
+export type AppType = typeof app
 
 export {
     app

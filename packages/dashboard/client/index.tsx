@@ -1,7 +1,7 @@
 import * as ReactDOM from 'react-dom/client';
-import { Component } from "./Component"
+import { App } from "./App"
 
 const root = ReactDOM.createRoot(document.getElementById('root')!);
 
 console.log('testomg testing testing')
-root.render(<Component message="Sup!" />)
+root.render(<App message="Sup!" />)
