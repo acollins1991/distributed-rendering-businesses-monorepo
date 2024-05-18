@@ -8,6 +8,8 @@ import signin from './routes/signin'
 import signout from './routes/signout'
 import resetpassword from './routes/resetpassword'
 import user from './routes/user'
+import { serveStatic } from 'hono/bun'
+import path from "path"
 
 // @ts-ignore index file exists
 import html from "../index.html" with { type: "text" };
@@ -23,6 +25,13 @@ app.get('/', async () => {
         }
     })
 })
+// serve static files
+app.get('client/*', serveStatic({
+    root: './dist',
+    onNotFound(path, c) {
+        console.log(path)
+    }
+}))
 
 const apiServer = new Hono()
 apiServer.route("/user", user)

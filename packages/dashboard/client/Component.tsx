@@ -1,3 +1,3 @@
 export function Component(props: { message: string }) {
-    return <p>{props.message}</p>
+    return <p>Hola 123! {props.message}</p>
 }
