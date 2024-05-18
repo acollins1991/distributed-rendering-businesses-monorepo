@@ -1,4 +1,4 @@
-import type { LambdaBindings } from '../types';
+import type { LambdaBindings } from '../../types';
 
 type CognitoUser = {
     sub: string;

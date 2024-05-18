@@ -1,5 +1,5 @@
 import createEvent from "@serverless/event-mocks"
-import { app } from "./packages/friendly-sites-api";
+import { app } from "./packages/dashboard/server";
 
 const healtcheck = await fetch('http://localstack:4566/_localstack/health')
 

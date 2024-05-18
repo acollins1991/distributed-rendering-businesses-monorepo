@@ -1,4 +1,4 @@
-import createNewEntity from "../../friendly-sites-api/entities/createNewEntity"
+import createNewEntity from "../../dashboard/entities/createNewEntity"
 
 export default createNewEntity(
     'page',

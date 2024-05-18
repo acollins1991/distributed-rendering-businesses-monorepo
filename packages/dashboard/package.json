@@ -1,17 +1,33 @@
 {
   "name": "dashboard",
-  "private": true,
+  "module": "index.ts",
   "type": "module",
   "scripts": {
-    "build": "nuxt build",
-    "dev": "nuxt dev",
-    "generate": "nuxt generate",
-    "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "build": "bun run index.ts",
+    "dev": "bun run dev.ts"
+  },
+  "devDependencies": {
+    "@anatine/zod-mock": "^3.13.4",
+    "@types/react-dom": "^18.3.0",
+    "aws-sdk-client-mock": "^4.0.0"
   },
   "dependencies": {
-    "nuxt": "^3.11.2",
-    "vue": "^3.4.21",
-    "vue-router": "^4.3.0"
+    "@aws-sdk/client-dynamodb": "^3.540.0",
+    "@aws-sdk/client-lambda": "^3.540.0",
+    "@aws-sdk/client-route-53": "^3.554.0",
+    "@faker-js/faker": "^8.4.1",
+    "@types/aws-lambda": "^8.10.136",
+    "aws-lambda": "^1.0.7",
+    "check-password-strength": "^2.0.10",
+    "date-fns": "^3.6.0",
+    "electrodb": "^2.13.1",
+    "hono": "^4.2.1",
+    "io-ts": "^2.2.21",
+    "lucia": "^3.2.0",
+    "oslo": "^1.2.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "ts-runtime": "^0.3.0",
+    "zod": "^3.23.8"
   }
 }
