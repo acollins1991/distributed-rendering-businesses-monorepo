@@ -1,23 +1,18 @@
-import { hc } from 'hono/client'
 import { Hono } from 'hono'
-import { cors } from 'hono/cors'
 import sites from './routes/sites'
-// import teams from './routes/teams'
 import signup from './routes/signup'
 import signin from './routes/signin'
 import signout from './routes/signout'
 import resetpassword from './routes/resetpassword'
 import user from './routes/user'
 import { serveStatic } from 'hono/bun'
-import path from "path"
+import { logger } from 'hono/logger'
 
 // @ts-ignore index file exists
 import html from "../index.html" with { type: "text" };
 import authenticate from './routes/authenticate'
 
 const app = new Hono()
-
-app.use("*", cors())
 
 app.get('/', async () => {
     return new Response(html, {
@@ -26,15 +21,28 @@ app.get('/', async () => {
         }
     })
 })
+// route notFound to index so react can handle
+app.notFound((c) => {
+    if (c.req.url.includes('/api/')) {
+        return c.text("API route not found", 404)
+    }
+
+    return new Response(html, {
+        headers: {
+            "Content-Type": "text/html"
+        }
+    })
+})
 // serve static files
-app.get('client/*', serveStatic({
-    root: './dist',
+app.get('/dist/client/*', serveStatic({
+    root: '.',
     onNotFound(path, c) {
         console.log(path)
     }
 }))
 
 const apiServer = new Hono()
+apiServer.use(logger())
 apiServer.route("/user", user)
 // sites
 apiServer.route("/sites", sites)

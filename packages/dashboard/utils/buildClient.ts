@@ -7,6 +7,7 @@ async function buildClient(clientAssetsPath: string) {
         outdir: clientAssetsPath,
         splitting: true,
         minify: true,
+        sourcemap: "inline"
     })
 }
 
