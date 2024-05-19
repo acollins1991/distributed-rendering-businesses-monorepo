@@ -1,5 +1,5 @@
-import AppLoginForm from "../components/AppLoginForm";
 import { Link } from "react-router-dom";
+import AppSignUpForm from "../components/AppSignUpForm";
 
 export default function () {
     return <div className="d-flex justify-content-center align-items-center min-vw-100 min-vh-100">
@@ -9,8 +9,8 @@ export default function () {
                 width: "18rem"
             }
         }>
-            <AppLoginForm />
-            <Link to="/signup">Create an account</Link>
+            <AppSignUpForm />
+            <Link to="/login">Login</Link>
         </div>
 
     </div >

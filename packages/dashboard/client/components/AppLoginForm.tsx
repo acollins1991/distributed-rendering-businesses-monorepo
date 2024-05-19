@@ -1,11 +1,13 @@
 import type { FormEvent } from "react"
 import { useUserStore } from "../store/user"
+import { useNavigate } from "react-router-dom";
 
 export default () => {
 
-    const { signinUser } = useUserStore()
+    const { signinUser, authenticateFromCookie } = useUserStore()
+    const navigate = useNavigate()
 
-    function onSubmit(e: FormEvent<HTMLFormElement>) {
+    async function onSubmit(e: FormEvent<HTMLFormElement>) {
         e.preventDefault()
         const form = e.target as HTMLFormElement
         const valid = form.checkValidity()
@@ -17,10 +19,23 @@ export default () => {
         } = {}
         formData.forEach((value: string, key: 'email' | 'password') => submissionObject[key] = value);
 
-        signinUser(submissionObject as {
-            email: string,
-            password: string
-        })
+        try {
+            const res = await signinUser(submissionObject as {
+                email: string,
+                password: string
+            })
+
+            if (!res?.token) {
+                throw Error('Bad response')
+            }
+
+            await authenticateFromCookie()
+
+            navigate('/')
+
+        } catch (e) {
+            console.error(e)
+        }
     }
 
     return <form onSubmit={onSubmit}>

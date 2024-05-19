@@ -1,10 +1,11 @@
 import type { User } from 'lucia'
 import { create } from 'zustand'
-import { getCookie, setCookie } from "typescript-cookie"
 import apiClient from "../utils/apiClient"
+import { getTokenCookie, setTokenCookie } from '../utils/tokenCookie'
 
 interface UserStore {
     user: User | null,
+    token: string | null,
     isAuthenticated: boolean,
     isLoading: boolean,
     authenticateFromCookie: () => Promise<void>,
@@ -13,21 +14,20 @@ interface UserStore {
         password: string
     }) => Promise<{
         token: string
+    } | null>,
+    signupUser: (details: {
+        first_name: string,
+        last_name: string,
+        email: string,
+        password: string
+    }) => Promise<{
+        token: string
     } | null>
-}
-
-const tokenCookieName = 'friendly_sites_auth_cookie'
-
-function setTokenCookie(token: string) {
-    setCookie(tokenCookieName, token)
-}
-
-function getTokenCookie() {
-    return getCookie(tokenCookieName)
 }
 
 const useUserStore = create<UserStore>((set) => ({
     user: null,
+    token: getTokenCookie() || null,
     isAuthenticated: false,
     isLoading: true,
     authenticateFromCookie: async () => {
@@ -43,9 +43,17 @@ const useUserStore = create<UserStore>((set) => ({
             return state
         })
 
-        const { user, authenticated } = apiClient.api.authenticate.$post({
-            token
+        const res = await apiClient.authenticate.$post(null, {
+            headers: {
+                authorization: `Bearer ${getTokenCookie()}`
+            }
         });
+
+        if (!res.ok) {
+            return
+        }
+
+        const { user, authenticated } = await res.json()
 
         set((state) => {
             if (authenticated) {
@@ -60,17 +68,40 @@ const useUserStore = create<UserStore>((set) => ({
     },
     signinUser: async details => {
 
-        // const res = apiClient.signin.$post({ body: details });
-        const res = await fetch('/api/signing', {
-            method: "POST",
-            body: JSON.stringify(details)
+        const res = await apiClient.signin.$post({
+            json: details
+        });
+
+        if (!res.ok) {
+            return null
+        }
+
+        const { token } = await res.json()
+
+        setTokenCookie(token)
+
+        set((state) => {
+            return state
         })
+
+        return {
+            token: token
+        }
+
+    },
+    signupUser: async details => {
+
+        const res = await apiClient.signup.$post({
+            json: details
+        });
 
         if (res.status !== 200 || !res.token) {
             return null
         }
 
-        setTokenCookie(res.token)
+        const { token } = await res.json()
+
+        setTokenCookie(token)
 
         return {
             token: res.token

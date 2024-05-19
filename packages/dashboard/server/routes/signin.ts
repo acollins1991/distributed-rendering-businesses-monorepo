@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { Context, Hono } from "hono";
 import { z } from "zod";
 import { auth } from "../auth";
 import { entity } from "../entities/user";
@@ -8,6 +8,12 @@ import { zValidator } from "@hono/zod-validator";
 
 const signin = new Hono()
 
+function badSignIn(c: Context) {
+    return c.json({
+        message: 'Invalid email or password'
+    }, 401)
+}
+
 signin.post(
     "/",
     zValidator("json", z.object({
@@ -15,6 +21,7 @@ signin.post(
         password: z.string()
     })),
     async (c) => {
+
         const {
             email,
             password
@@ -26,13 +33,13 @@ signin.post(
             const user = data[0]
 
             if (!user) {
-                throw Error('Invalid email or password')
+                return badSignIn(c)
             }
 
             const isValidPassword = await bunPassword.verify(password, user.password_hash)
 
             if (!isValidPassword) {
-                throw Error('Invalid email or password')
+                return badSignIn(c)
             }
 
             const session = await auth.createSession(user.userId, {
@@ -46,7 +53,8 @@ signin.post(
             }, 200)
 
         } catch (e) {
-            return c.json(e, 400)
+            console.log(e)
+            return c.json(e, 500)
         }
     })
 

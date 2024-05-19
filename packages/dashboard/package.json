@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "bun run index.ts",
-    "dev": "bun run dev.ts"
+    "dev": "bun --hot run dev.ts"
   },
   "devDependencies": {
     "@anatine/zod-mock": "^3.13.4",
