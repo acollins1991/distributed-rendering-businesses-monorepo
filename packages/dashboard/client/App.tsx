@@ -1,5 +1,4 @@
 import { StrictMode, useEffect, useState } from "react";
-import * as ReactDOM from "react-dom/client";
 import {
     RouterProvider,
 } from "react-router-dom";
@@ -22,7 +21,7 @@ export default () => {
         } else {
             setAuthChecked(true)
         }
-    }, [authChecked])
+    }, [])
 
     return <StrictMode>
         {authChecked ?

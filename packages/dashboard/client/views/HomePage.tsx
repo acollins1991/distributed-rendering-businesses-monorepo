@@ -2,8 +2,6 @@ import { useEffect, useState } from "react";
 import { useUserStore } from "../store/user";
 import client from "../utils/authenticatedApiClient"
 import { Link } from "react-router-dom";
-import Button from 'react-bootstrap/Button';
-import Modal from 'react-bootstrap/Modal';
 import HomePageAddSiteButton from "../components/HomePageAddSiteButton";
 import type { Site } from "../../server/entities/site";
 
@@ -24,7 +22,7 @@ export default function () {
         } else {
             setisLoading(false)
         }
-    }, [isLoading])
+    }, [])
 
     return <div>
 
