@@ -30,7 +30,7 @@ export default () => {
             setTemplate(templateJson)
             setIsLoading(false)
         })
-    }, [isLoading])
+    }, [])
 
     return <div>
         {
