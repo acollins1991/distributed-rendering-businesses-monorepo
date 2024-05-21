@@ -1,5 +1,4 @@
 import { Form, Button } from "react-bootstrap"
-import defaultTemplateContent from "../../utils/defaultTemplateContent"
 import client from "../utils/authenticatedApiClient"
 import type { Template } from "../../server/entities/template"
 import type { Site } from "../../server/entities/site"
