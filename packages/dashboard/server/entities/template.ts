@@ -1,5 +1,7 @@
 import { Entity, createSchema, type EntityItem } from "electrodb";
 import { client, table } from "../db/index"
+import defaultTemplateContent from "../../utils/defaultTemplateContent";
+import isHtml from 'is-html';
 
 const schema = createSchema({
     model: {
@@ -21,6 +23,17 @@ const schema = createSchema({
         name: {
             type: 'string',
             required: true
+        },
+        content: {
+            type: 'string',
+            default: () => defaultTemplateContent
+        },
+        variables: {
+            type: 'any',
+            default: () => ({
+                page_title: 'Page Title',
+                page_content: 'Page Content'
+            }),
         },
         created_at: {
             type: "number",

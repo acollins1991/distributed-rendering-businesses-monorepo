@@ -1,14 +1,15 @@
 import { join } from "path"
 
 async function buildClient(clientAssetsPath: string) {
-    return Bun.build({
+    const build = await Bun.build({
         target: 'browser',
         entrypoints: [join(__dirname, '../client/index.tsx')],
         outdir: clientAssetsPath,
         splitting: true,
         minify: true,
-        sourcemap: "inline"
+        sourcemap: "external"
     })
+    return build
 }
 
 export {

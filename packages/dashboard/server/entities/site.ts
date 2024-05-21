@@ -25,6 +25,10 @@ const schema = createSchema({
             type: 'string',
             required: true
         },
+        default_template: {
+            type: 'string',
+            required: true
+        },
         created_at: {
             type: "number",
             readOnly: true,

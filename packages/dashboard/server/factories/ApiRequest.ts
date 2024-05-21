@@ -8,7 +8,7 @@ export default class ApiRequestFactory {
     user?: Awaited<ReturnType<typeof createUserFactory>>["user"]
     session?: Awaited<ReturnType<typeof createUserFactory>>["session"]
 
-    constructor(endpoint: string, body: Object) {
+    constructor(endpoint: string, body?: Object) {
 
         this.endpoint = endpoint;
 

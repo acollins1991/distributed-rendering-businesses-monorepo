@@ -54,6 +54,23 @@ sites.use("*", apiValidateBearerTokenMiddleware)
 // sites targeting specific site inject site record to site var
 sites.use("/:siteId/*", setSiteRecordMiddleware)
 
+sites.get(
+    "/",
+    async (c) => {
+        const user = c.get("user") as User
+
+        if (!user.sites?.length) {
+            return c.json([], 200)
+        }
+
+        const { data: sites } = await entity.get(
+            // batch get query
+            user.sites.map(site => ({ siteId: site }))
+        ).go()
+
+        return c.json(sites, 200)
+    })
+
 // /sites POST
 sites.post(
     "/",
@@ -68,17 +85,34 @@ sites.post(
         const hostedZone = await createHostedZone(domain)
 
         try {
-            const site = await entity.create({
+            /**
+             * TODO: Should be a better way of doing this, currently using 3 db calls
+             * We are creating the site record with an empty string as the default_template value as a palceholder,
+             * then we create a template, 
+             * then we patch the site record with the new template id
+             * 
+             * Potentially we can generate the site ID manually so that we only make two db calls (possibly a transact write)
+             */
+
+            const { data: { siteId } } = await entity.create({
                 name,
                 domain,
-                hosted_zone: hostedZone.HostedZone?.Id as string
+                hosted_zone: hostedZone.HostedZone?.Id as string,
+                // placeholder value
+                default_template: ''
             }).go()
+
+            const { data: template } = await templateEntity.create({ siteId, name: "Default" }).go()
+
+            const { data: site } = await entity.patch({ siteId }).set({
+                default_template: template.templateId
+            }).go({ response: "all_new" })
 
             // add new site id to the user record as ownership signal
             const user = c.get("user")
-            await userEntity.patch({ userId: user.userId }).append({ sites: [site.data.siteId] }).go()
+            await userEntity.patch({ userId: user.userId }).append({ sites: [siteId] }).go()
 
-            return c.json(site.data, 200)
+            return c.json(site, 200)
         } catch (e) {
             return c.json(e, 500)
         }
@@ -219,9 +253,7 @@ sites.get(
     async (c) => {
         try {
             const template = c.get("template") as Template
-            return c.json({
-                data: template
-            }, 200)
+            return c.json(template, 200)
         } catch (e) {
             return c.json(e, 500)
         }
@@ -230,18 +262,16 @@ sites.get(
 sites.patch(
     "/:siteId/templates/:templateId",
     zValidator("json", z.object({
-        name: z.string().optional()
+        name: z.string().optional(),
+        variables: z.record(z.string(), z.string())
     })),
     async (c) => {
         const { templateId } = c.get("template") as Template
         const patchObject = c.req.valid("json")
         try {
             const { data: template } = await templateEntity.patch({ templateId }).set(patchObject).go({ response: "all_new" })
-            return c.json({
-                data: template
-            }, 200)
+            return c.json(template, 200)
         } catch (e) {
-            console.log(e)
             return c.json(e, 500)
         }
     })
@@ -252,9 +282,7 @@ sites.delete(
         const { templateId } = c.get("template") as Template
         try {
             const { data: template } = await templateEntity.delete({ templateId }).go()
-            return c.json({
-                data: template
-            }, 200)
+            return c.json(template, 200)
         } catch (e) {
             console.log(e)
             return c.json(e, 500)

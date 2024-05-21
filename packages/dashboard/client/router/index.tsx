@@ -10,6 +10,7 @@ import { useUserStore } from "../store/user";
 import LoginPage from '../views/LoginPage'
 import SignUpPage from "../views/SignUpPage";
 import HomePage from "../views/HomePage";
+import SiteEditPage from "../views/SiteEditPage";
 
 const PrivateRoutes = () => {
     const location = useLocation();
@@ -32,6 +33,15 @@ const router = createBrowserRouter([
             {
                 path: "",
                 element: <HomePage />
+            },
+            {
+                path: "site/:siteId/",
+                children: [
+                    {
+                        path: "edit/:templateId",
+                        element: <SiteEditPage />
+                    }
+                ]
             }
         ]
     },

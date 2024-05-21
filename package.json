@@ -16,6 +16,7 @@
     "typescript": "^5.4.5"
   },
   "dependencies": {
-    "@hono/zod-validator": "^0.2.1"
+    "@hono/zod-validator": "^0.2.1",
+    "handlebars": "^4.7.8"
   }
 }

@@ -9,6 +9,7 @@ import { entity as userEntity } from "../entities/user"
 import { entity as templateEntity, type Template } from "../entities/template"
 import { faker } from "@faker-js/faker"
 import ApiRequestFactory from "../factories/ApiRequest"
+import defaultTemplateContent from "../../utils/defaultTemplateContent"
 
 describe("/sites endpoints", () => {
 
@@ -46,6 +47,12 @@ describe("/sites endpoints", () => {
             // siteId should now be in the user record
             const refreshedUserRecord = await userEntity.get({ userId: databaseUser.userId }).go()
             expect(refreshedUserRecord.data?.sites).toContain(siteRecord.data[0].siteId)
+
+            // site record should have a default template id that references a new template with default content
+            const templateId = siteRecord.data[0].default_template
+            const { data: template } = await templateEntity.get({ templateId }).go()
+            expect(template).toBeTruthy()
+            expect(template?.content).toBe(defaultTemplateContent)
         })
     })
 
@@ -55,7 +62,7 @@ describe("/sites endpoints", () => {
             // preexisting setup hosted zone
             const hostedZone = await createHostedZone("dummydomain.co.uk")
             const siteName = 'Tesing Site ' + crypto.randomUUID()
-            const { siteId } = await entity.create({ name: siteName, domain: 'dummydomain', hosted_zone: hostedZone.HostedZone?.Id as string }).go().then(res => res.data)
+            const { siteId } = await entity.create({ name: siteName, domain: 'dummydomain', hosted_zone: hostedZone.HostedZone?.Id as string, default_template: '' }).go().then(res => res.data)
 
             // expect item to exist
             expect((await entity.get({ siteId }).go()).data).toBeTruthy()
@@ -72,7 +79,7 @@ describe("/sites endpoints", () => {
             // preexisting setup hosted zone
             const hostedZone = await createHostedZone("dummydomain.co.uk")
             const siteName = 'Tesing Site ' + crypto.randomUUID()
-            const { siteId } = await entity.create({ name: siteName, domain: 'dummydomain', hosted_zone: hostedZone.HostedZone?.Id as string }).go().then(res => res.data)
+            const { siteId } = await entity.create({ name: siteName, domain: 'dummydomain', hosted_zone: hostedZone.HostedZone?.Id as string, default_template: '' }).go().then(res => res.data)
             // add siteId to user
             await userEntity.update({ userId: databaseUser.userId }).append({ sites: [siteId] }).go()
 
@@ -97,7 +104,7 @@ describe("/sites endpoints", () => {
 
             const siteName = 'Tesing Site ' + crypto.randomUUID()
 
-            const { siteId } = await entity.create({ name: siteName, domain: "dummydomain.co.uk", hosted_zone: hostedZone.HostedZone?.Id as string }).go().then(res => res.data)
+            const { siteId } = await entity.create({ name: siteName, domain: "dummydomain.co.uk", hosted_zone: hostedZone.HostedZone?.Id as string, default_template: '' }).go().then(res => res.data)
             // add siteId to user
             await userEntity.update({ userId: databaseUser.userId }).append({ sites: [siteId] }).go()
 
@@ -118,7 +125,7 @@ describe("/sites endpoints", () => {
     describe('DELETE', () => {
         test('deletes the site record', async () => {
             const siteName = 'Tesing Site ' + crypto.randomUUID()
-            const { siteId } = await entity.create({ name: siteName, domain: 'dummydomain', hosted_zone: 'dummyhostedzoneid' }).go().then(res => res.data)
+            const { siteId } = await entity.create({ name: siteName, domain: 'dummydomain', hosted_zone: 'dummyhostedzoneid', default_template: '' }).go().then(res => res.data)
             // add siteId to user
             await userEntity.update({ userId: databaseUser.userId }).append({ sites: [siteId] }).go()
 
@@ -135,7 +142,7 @@ describe("/sites endpoints", () => {
     describe('GET site record', () => {
         test('gets the site record', async () => {
             const siteName = 'Tesing Site ' + crypto.randomUUID()
-            const { siteId } = await entity.create({ name: siteName, domain: 'dummydomain', hosted_zone: 'dummyhostedzoneid' }).go().then(res => res.data)
+            const { siteId } = await entity.create({ name: siteName, domain: 'dummydomain', hosted_zone: 'dummyhostedzoneid', default_template: '' }).go().then(res => res.data)
             // add siteId to user
             await userEntity.update({ userId: databaseUser.userId }).append({ sites: [siteId] }).go()
 
@@ -146,6 +153,41 @@ describe("/sites endpoints", () => {
             expect(res.status).toBe(200)
             const json = await res.json()
             expect(json.siteId).toBe(siteId)
+        })
+    })
+
+    describe("GET list sites", () => {
+
+        let scopedDatabaseUser: User
+        let scopedDatabaseUserBearerToken: string
+
+        beforeAll(async () => {
+            const { user, session } = await createUserFactory()
+            scopedDatabaseUser = user
+            scopedDatabaseUserBearerToken = session.id
+        })
+
+        test('gets a list of sites from users account', async () => {
+            const sites = await Promise.all([1, 2].map(() => {
+                return new ApiRequestFactory(`/api/sites`, {
+                    name: faker.word.words(4),
+                }).post.setAuthSession(scopedDatabaseUserBearerToken).go().then(async (r) => {
+                    const json = await r.json()
+                    return json
+                })
+            }))
+            expect(sites.length).toBe(2)
+
+            const res = await new ApiRequestFactory(`/api/sites`, {
+                name: faker.word.words(4),
+            }).get.setAuthSession(scopedDatabaseUserBearerToken).go()
+
+            expect(res.status).toBe(200)
+
+            const json = await res.json()
+            sites.forEach(site => {
+                expect(json.find((record: Site) => site.siteId === record.siteId)).toBeTruthy()
+            })
         })
     })
 
@@ -243,7 +285,7 @@ describe("/sites endpoints", () => {
 
                 expect(res.status).toBe(200)
 
-                const { data: template } = await res.json()
+                const template = await res.json()
                 expect(template.name).toBe(templateRecord.name)
             })
 
@@ -276,10 +318,10 @@ describe("/sites endpoints", () => {
                 expect(res.status).toBe(200)
 
                 const json = await res.json()
-                expect(json.data.name).toBe(newTemplateName)
+                expect(json.name).toBe(newTemplateName)
 
-                const { data: updatedRecord } = await templateEntity.get({ templateId: templateRecord.templateId }).go()
-                expect(updatedRecord?.name).toBe(newTemplateName)
+                const updatedRecord = await templateEntity.get({ templateId: templateRecord.templateId }).go()
+                expect(updatedRecord.data.name).toBe(newTemplateName)
 
             })
 
@@ -298,7 +340,7 @@ describe("/sites endpoints", () => {
                 expect(res.status).toBe(200)
 
                 const json = await res.json()
-                expect(json.data.templateId).toBe(templateRecord.templateId)
+                expect(json.templateId).toBe(templateRecord.templateId)
 
                 expect((await templateEntity.get({ templateId: templateRecord.templateId }).go()).data).toBeFalsy()
             })

@@ -33,7 +33,7 @@ const schema = createSchema({
             required: true,
             default: () => Date.now(),
             set: () => Date.now(),
-        },
+        }
     },
     indexes: {
         tokenId: {

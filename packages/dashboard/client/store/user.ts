@@ -1,7 +1,9 @@
 import type { User } from 'lucia'
 import { create } from 'zustand'
+import { combine } from 'zustand/middleware'
 import apiClient from "../utils/apiClient"
-import { getTokenCookie, setTokenCookie } from '../utils/tokenCookie'
+import authenticatedApiClient from "../utils/authenticatedApiClient"
+import { getTokenCookie, removeTokenCookie, setTokenCookie } from '../utils/tokenCookie'
 
 interface UserStore {
     user: User | null,
@@ -22,7 +24,8 @@ interface UserStore {
         password: string
     }) => Promise<{
         token: string
-    } | null>
+    } | null>,
+    refreshUser: () => Promise<void>
 }
 
 const useUserStore = create<UserStore>((set) => ({
@@ -59,6 +62,7 @@ const useUserStore = create<UserStore>((set) => ({
             if (authenticated) {
                 state.user = user
             } else {
+                removeTokenCookie()
                 state.user = null
             }
             state.isAuthenticated = authenticated
@@ -95,18 +99,58 @@ const useUserStore = create<UserStore>((set) => ({
             json: details
         });
 
-        if (res.status !== 200 || !res.token) {
+        if (res.status !== 200) {
             return null
         }
 
         const { token } = await res.json()
 
+        if (!token) {
+            return null
+        }
+
+
         setTokenCookie(token)
 
         return {
-            token: res.token
+            token
         }
 
+    },
+    async refreshUser() {
+        if (!Boolean(getTokenCookie())) {
+            console.warn('Cannot use refreshUser without token cookie')
+            return
+        }
+
+        const res = await authenticatedApiClient.user.$get()
+        const user = await res.json()
+
+        set((state) => {
+            state.user = user
+            return state
+        })
+    },
+    async addNewSite(args: {
+        name: string,
+        domain?: string
+    }) {
+        const res = await authenticatedApiClient.sites.$post({
+            json: args
+        })
+
+        if (res.status !== 200) {
+            return
+        }
+
+        const json = await res.json()
+
+        const { refreshUser } = useUserStore()
+
+        // update user
+        await refreshUser()
+
+        return json
     }
 }))
 

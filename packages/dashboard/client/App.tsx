@@ -13,12 +13,16 @@ export default () => {
     const [authChecked, setAuthChecked] = useState(false)
     const { authenticateFromCookie } = useUserStore()
 
-    if (Boolean(getTokenCookie())) {
-        authenticateFromCookie().then(() => {
-            const { isAuthenticated } = useUserStore.getState()
-            setAuthChecked(isAuthenticated)
-        })
-    }
+    useEffect(() => {
+        if (Boolean(getTokenCookie())) {
+            authenticateFromCookie().then((res) => {
+                const { isAuthenticated } = useUserStore.getState()
+                setAuthChecked(true)
+            })
+        } else {
+            setAuthChecked(true)
+        }
+    }, [authChecked])
 
     return <StrictMode>
         {authChecked ?
