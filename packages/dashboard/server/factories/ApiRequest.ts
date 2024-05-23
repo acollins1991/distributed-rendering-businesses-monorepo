@@ -43,23 +43,13 @@ export default class ApiRequestFactory {
         return this
     }
 
-    async addAuthUser(userSettings?: UserFactoryOverride) {
-
-        if (this.user) {
-            throw Error("User already set")
-        }
-
-        const { session } = userSettings ? await createUserFactory(userSettings) : await createUserFactory()
-        this.config.headers["authorization"] = `Bearer ${session.id}`
-        return this
-    }
-
     setAuthSession(token: string) {
         this.config.headers["authorization"] = `Bearer ${token}`
         return this
     }
 
     async go() {
+
         return app.request(this.endpoint, this.config)
     }
 }

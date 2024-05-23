@@ -54,15 +54,30 @@ describe("/sites endpoints", () => {
             expect(template).toBeTruthy()
             expect(template?.content).toBe(defaultTemplateContent)
         })
+
+        test('no two site records should occupy the same domain', async () => {
+            const domain = `${crypto.randomUUID()}.com`
+            // create existing site with domain
+            await entity.create({ name: 'Unique Domain Site', domain, hosted_zone: 'dummyhostingzone', default_template: '' }).go()
+
+            const res = await new ApiRequestFactory('/api/sites', {
+                name: 'New Site',
+                domain
+            }).post.setAuthSession(bearerToken).go()
+
+            expect(res.status).toBe(409)
+
+        })
     })
 
     describe("PATCH", () => {
 
         test('site id must be in user record for successful update', async () => {
             // preexisting setup hosted zone
-            const hostedZone = await createHostedZone("dummydomain.co.uk")
+            const domain = `${crypto.randomUUID()}.com`
+            const hostedZone = await createHostedZone(domain)
             const siteName = 'Tesing Site ' + crypto.randomUUID()
-            const { siteId } = await entity.create({ name: siteName, domain: 'dummydomain', hosted_zone: hostedZone.HostedZone?.Id as string, default_template: '' }).go().then(res => res.data)
+            const { siteId } = await entity.create({ name: siteName, domain: domain, hosted_zone: hostedZone.HostedZone?.Id as string, default_template: '' }).go().then(res => res.data)
 
             // expect item to exist
             expect((await entity.get({ siteId }).go()).data).toBeTruthy()
@@ -77,9 +92,10 @@ describe("/sites endpoints", () => {
 
         test('updates the site record name', async () => {
             // preexisting setup hosted zone
-            const hostedZone = await createHostedZone("dummydomain.co.uk")
+            const domain = `${crypto.randomUUID()}.com`
+            const hostedZone = await createHostedZone(domain)
             const siteName = 'Tesing Site ' + crypto.randomUUID()
-            const { siteId } = await entity.create({ name: siteName, domain: 'dummydomain', hosted_zone: hostedZone.HostedZone?.Id as string, default_template: '' }).go().then(res => res.data)
+            const { siteId } = await entity.create({ name: siteName, domain, hosted_zone: hostedZone.HostedZone?.Id as string, default_template: '' }).go().then(res => res.data)
             // add siteId to user
             await userEntity.update({ userId: databaseUser.userId }).append({ sites: [siteId] }).go()
 
@@ -100,11 +116,12 @@ describe("/sites endpoints", () => {
         test('updates the site record domain', async () => {
 
             // preexisting setup hosted zone
-            const hostedZone = await createHostedZone("dummydomain.co.uk")
+            const domain = `${crypto.randomUUID()}.com`
+            const hostedZone = await createHostedZone(domain)
 
             const siteName = 'Tesing Site ' + crypto.randomUUID()
 
-            const { siteId } = await entity.create({ name: siteName, domain: "dummydomain.co.uk", hosted_zone: hostedZone.HostedZone?.Id as string, default_template: '' }).go().then(res => res.data)
+            const { siteId } = await entity.create({ name: siteName, domain, hosted_zone: hostedZone.HostedZone?.Id as string, default_template: '' }).go().then(res => res.data)
             // add siteId to user
             await userEntity.update({ userId: databaseUser.userId }).append({ sites: [siteId] }).go()
 
@@ -124,8 +141,9 @@ describe("/sites endpoints", () => {
     })
     describe('DELETE', () => {
         test('deletes the site record', async () => {
+            const domain = `${crypto.randomUUID()}.com`
             const siteName = 'Tesing Site ' + crypto.randomUUID()
-            const { siteId } = await entity.create({ name: siteName, domain: 'dummydomain', hosted_zone: 'dummyhostedzoneid', default_template: '' }).go().then(res => res.data)
+            const { siteId } = await entity.create({ name: siteName, domain, hosted_zone: 'dummyhostedzoneid', default_template: '' }).go().then(res => res.data)
             // add siteId to user
             await userEntity.update({ userId: databaseUser.userId }).append({ sites: [siteId] }).go()
 
@@ -141,8 +159,9 @@ describe("/sites endpoints", () => {
 
     describe('GET site record', () => {
         test('gets the site record', async () => {
+            const domain = `${crypto.randomUUID()}.com`
             const siteName = 'Tesing Site ' + crypto.randomUUID()
-            const { siteId } = await entity.create({ name: siteName, domain: 'dummydomain', hosted_zone: 'dummyhostedzoneid', default_template: '' }).go().then(res => res.data)
+            const { siteId } = await entity.create({ name: siteName, domain, hosted_zone: 'dummyhostedzoneid', default_template: '' }).go().then(res => res.data)
             // add siteId to user
             await userEntity.update({ userId: databaseUser.userId }).append({ sites: [siteId] }).go()
 
@@ -168,9 +187,10 @@ describe("/sites endpoints", () => {
         })
 
         test('gets a list of sites from users account', async () => {
-            const sites = await Promise.all([1, 2].map(() => {
+            const sites = await Promise.all([1, 2].map(async () => {
                 return new ApiRequestFactory(`/api/sites`, {
                     name: faker.word.words(4),
+                    domain: `${crypto.randomUUID()}.com`
                 }).post.setAuthSession(scopedDatabaseUserBearerToken).go().then(async (r) => {
                     const json = await r.json()
                     return json
@@ -312,7 +332,8 @@ describe("/sites endpoints", () => {
                 const newTemplateName = `Template ${crypto.randomUUID()}`
 
                 const res = await new ApiRequestFactory(`/api/sites/${databaseSite.siteId}/templates/${templateRecord.templateId}`, {
-                    name: newTemplateName
+                    name: newTemplateName,
+                    variables: {}
                 }).patch.setAuthSession(bearerToken).go()
 
                 expect(res.status).toBe(200)

@@ -94,7 +94,15 @@ sites.post(
              * Potentially we can generate the site ID manually so that we only make two db calls (possibly a transact write)
              */
 
-            const { data: { siteId } } = await entity.create({
+            // TODO: another call and using scan, not good
+            const { data: [existingSiteWithDomain] } = await entity.scan.where(({ domain: recordDomain }, { eq }) => eq(recordDomain, domain)).go()
+            if (existingSiteWithDomain) {
+                return c.json({
+                    messsage: 'Domain already taken'
+                }, 409)
+            }
+
+            const { data: site } = await entity.create({
                 name,
                 domain,
                 hosted_zone: hostedZone.HostedZone?.Id as string,
@@ -102,15 +110,16 @@ sites.post(
                 default_template: ''
             }).go()
 
-            const { data: template } = await templateEntity.create({ siteId, name: "Default" }).go()
+            const { data: template } = await templateEntity.create({ siteId: site.siteId, name: "Default" }).go()
 
-            const { data: site } = await entity.patch({ siteId }).set({
+            // add template
+            await entity.patch({ siteId: site.siteId }).set({
                 default_template: template.templateId
             }).go({ response: "all_new" })
 
             // add new site id to the user record as ownership signal
             const user = c.get("user")
-            await userEntity.patch({ userId: user.userId }).append({ sites: [siteId] }).go()
+            await userEntity.patch({ userId: user.userId }).append({ sites: [site.siteId] }).go()
 
             return c.json(site, 200)
         } catch (e) {
