@@ -4,8 +4,8 @@ import { entity as templateEntity, type Template } from '../dashboard/server/ent
 import Handlebars from 'handlebars';
 
 async function getSiteRecordFromUrl(url: URL): Promise<Site> {
-    const { data: site } = await siteEntity.find({ domain: url.hostname }).go()
-    console.log(url.hostname, site)
+    // TODO: must find another way of doing this
+    const { data: [site] } = await siteEntity.scan.where(({ domain }, { eq }) => eq(domain, url.hostname)).go()
     return site
 }
 

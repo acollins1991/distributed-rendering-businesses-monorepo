@@ -102,7 +102,7 @@ sites.post(
                 }, 409)
             }
 
-            const { data: site } = await entity.create({
+            const { data: { siteId } } = await entity.create({
                 name,
                 domain,
                 hosted_zone: hostedZone.HostedZone?.Id as string,
@@ -110,10 +110,10 @@ sites.post(
                 default_template: ''
             }).go()
 
-            const { data: template } = await templateEntity.create({ siteId: site.siteId, name: "Default" }).go()
+            const { data: template } = await templateEntity.create({ siteId, name: "Default" }).go()
 
             // add template
-            await entity.patch({ siteId: site.siteId }).set({
+            const { data: site } = await entity.patch({ siteId }).set({
                 default_template: template.templateId
             }).go({ response: "all_new" })
 
@@ -293,7 +293,6 @@ sites.delete(
             const { data: template } = await templateEntity.delete({ templateId }).go()
             return c.json(template, 200)
         } catch (e) {
-            console.log(e)
             return c.json(e, 500)
         }
     })

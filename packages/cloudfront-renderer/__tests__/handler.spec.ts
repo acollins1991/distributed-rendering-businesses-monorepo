@@ -6,6 +6,7 @@ import { entity as siteEntity, type Site } from "../../dashboard/server/entities
 import { entity as templateEntity, type Template } from "../../dashboard/server/entities/template";
 import ApiRequestFactory from "../../dashboard/server/factories/ApiRequest";
 import createUserFactory from "../../dashboard/server/factories/User";
+import defaultTemplateContent from "../../dashboard/utils/defaultTemplateContent";
 
 // from https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/lambda-event-structure.html#lambda-event-structure-response
 const dummyEventObject = {
@@ -175,9 +176,24 @@ describe("cloudfront renderer function", () => {
 
     test("renders a page", async () => {
         const callbackSpy = mock()
-        const res = await handler(createEvent(domain, '/testing123'), null, callbackSpy)
+
+        await handler(createEvent(domain, '/testing123'), null, callbackSpy)
 
         // expect(res.statusCode).toBe(200)
-        expect(callbackSpy).toHaveBeenCalled()
+        expect(callbackSpy).toHaveBeenCalledWith(null, {
+            status: '200',
+            statusDescription: 'OK',
+            headers: {
+                'cache-control': [{
+                    key: 'Cache-Control',
+                    value: 'max-age=100'
+                }],
+                'content-type': [{
+                    key: 'Content-Type',
+                    value: 'text/html'
+                }]
+            },
+            body: defaultTemplateContent.replace('{{ page_title }}', 'Page Title').replace('{{ page_content }}', 'Page Content'),
+        })
     })
 })
