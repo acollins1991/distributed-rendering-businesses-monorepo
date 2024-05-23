@@ -3,4 +3,11 @@
     "service": "devcontainer",
     "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
     "postStartCommand": "git config --global --add safe.directory ${containerWorkspaceFolder}",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "HashiCorp.terraform"
+            ]
+        }
+    }
 }

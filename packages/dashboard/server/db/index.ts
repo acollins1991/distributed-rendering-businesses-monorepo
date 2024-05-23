@@ -6,7 +6,7 @@ const credentials = {
 }
 
 const clientParams = {
-    region: process.env.LOCALSTACK_REGION,
+    region: process.env.AWS_REGION,
     endpoint: process.env.LOCALSTACK_ENDPOINT,
     credentials
 }
