@@ -179,7 +179,6 @@ describe("cloudfront renderer function", () => {
 
         await handler(createEvent(domain, '/testing123'), null, callbackSpy)
 
-        // expect(res.statusCode).toBe(200)
         expect(callbackSpy).toHaveBeenCalledWith(null, {
             status: '200',
             statusDescription: 'OK',
