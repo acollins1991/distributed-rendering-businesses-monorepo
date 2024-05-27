@@ -25,6 +25,7 @@ interface UserStore {
     }) => Promise<{
         token: string
     } | null>,
+    signoutUser: () => Promise<void>,
     refreshUser: () => Promise<void>
 }
 
@@ -116,6 +117,14 @@ const useUserStore = create<UserStore>((set) => ({
             token
         }
 
+    },
+    signoutUser: async () => {
+        await apiClient.signout.$post();
+        removeTokenCookie()
+        set((state) => {
+            state.user = null
+            return state
+        })
     },
     async refreshUser() {
         if (!Boolean(getTokenCookie())) {

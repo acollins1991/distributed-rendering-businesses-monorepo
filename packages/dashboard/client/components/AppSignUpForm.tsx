@@ -1,9 +1,11 @@
 import type { FormEvent } from "react"
 import { useUserStore } from "../store/user"
+import { useNavigate } from "react-router-dom"
 
 export default () => {
 
-    const { signupUser } = useUserStore()
+    const { signupUser, refreshUser } = useUserStore()
+    const navigate = useNavigate()
 
     function onSubmit(e: FormEvent<HTMLFormElement>) {
         e.preventDefault()
@@ -17,7 +19,10 @@ export default () => {
         } = {}
         formData.forEach((value: string, key: string) => submissionObject[key] = value);
 
-        signupUser(submissionObject)
+        signupUser(submissionObject).then(async () => {
+            await refreshUser()
+            navigate('/')
+        })
     }
 
     return <form onSubmit={onSubmit}>

@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 export default () => {
 
-    const { signinUser, authenticateFromCookie } = useUserStore()
+    const { signinUser, refreshUser } = useUserStore()
     const navigate = useNavigate()
 
     async function onSubmit(e: FormEvent<HTMLFormElement>) {
@@ -29,7 +29,7 @@ export default () => {
                 throw Error('Bad response')
             }
 
-            await authenticateFromCookie()
+            await refreshUser()
 
             navigate('/')
 

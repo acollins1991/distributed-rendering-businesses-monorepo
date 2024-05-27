@@ -1,11 +1,9 @@
 import { describe, test, expect, beforeAll } from "bun:test"
 import { entity, type User } from "../entities/user"
-import { entity as sessionEntity } from "../entities/sessions"
 import { faker } from "@faker-js/faker"
 import createUserFactory from "../factories/User"
 import validateBearerToken from "../utils/validateBearerToken"
 import type { Session } from "lucia"
-import { app } from ".."
 import ApiRequestFactory from "../factories/ApiRequest"
 
 describe("/user", () => {

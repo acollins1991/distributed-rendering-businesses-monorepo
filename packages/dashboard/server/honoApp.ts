@@ -7,13 +7,18 @@ import resetpassword from './routes/resetpassword'
 import user from './routes/user'
 import { serveStatic } from 'hono/bun'
 import { logger } from 'hono/logger'
+import { buildClient } from "../utils/buildClient"
+import path from "path"
 
 // @ts-ignore index file exists
 import html from "../index.html" with { type: "text" };
 import authenticate from './routes/authenticate'
 
+const isDev = process.env.MODE === 'development'
+
 const app = new Hono()
 
+// handle index.html
 app.get('/', async () => {
     return new Response(html, {
         headers: {

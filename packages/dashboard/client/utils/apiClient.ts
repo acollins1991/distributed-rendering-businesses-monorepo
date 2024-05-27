@@ -1,5 +1,5 @@
 import { hc } from "hono/client"
-import type { AppType } from "../../server"
+import type { AppType } from "../../server/entry-server"
 
 const client = hc<AppType>("/api", {
     headers: {

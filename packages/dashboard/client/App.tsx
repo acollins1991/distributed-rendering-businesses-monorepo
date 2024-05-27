@@ -6,16 +6,17 @@ import { router } from "./router"
 import { useUserStore } from "./store/user";
 import { getTokenCookie } from "./utils/tokenCookie";
 
+import AppNavbar from "./components/AppNavbar"
+
 
 export default () => {
 
     const [authChecked, setAuthChecked] = useState(false)
-    const { authenticateFromCookie } = useUserStore()
+    const { authenticateFromCookie, isAuthenticated } = useUserStore()
 
     useEffect(() => {
         if (Boolean(getTokenCookie())) {
             authenticateFromCookie().then((res) => {
-                const { isAuthenticated } = useUserStore.getState()
                 setAuthChecked(true)
             })
         } else {
@@ -25,7 +26,10 @@ export default () => {
 
     return <StrictMode>
         {authChecked ?
-            <RouterProvider router={router} />
+            <>
+                {isAuthenticated ? <AppNavbar /> : ''}
+                <RouterProvider router={router} />
+            </>
             : 'Checking Auth'
         }
     </StrictMode>

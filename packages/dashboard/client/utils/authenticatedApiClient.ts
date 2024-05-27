@@ -1,5 +1,5 @@
 import { hc } from "hono/client"
-import type { AppType } from "../../server"
+import type { AppType } from "../../server/entry-server"
 import { getTokenCookie } from "./tokenCookie"
 
 const client = hc<AppType>("/api", {

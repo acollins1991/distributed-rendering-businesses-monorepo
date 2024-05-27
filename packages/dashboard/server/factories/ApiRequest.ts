@@ -1,5 +1,5 @@
-import { app } from "..";
-import createUserFactory, { type UserFactoryOverride } from "./User";
+import { app } from "../honoApp";
+import createUserFactory from "./User";
 
 export default class ApiRequestFactory {
 

@@ -1,5 +1,4 @@
 import { describe, test, expect } from "bun:test"
-import { app } from ".."
 import { faker } from "@faker-js/faker"
 import createUserFactory from "../factories/User"
 import ApiRequestFactory from "../factories/ApiRequest"

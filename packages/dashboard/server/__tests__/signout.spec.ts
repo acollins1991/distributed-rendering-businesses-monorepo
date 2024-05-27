@@ -3,7 +3,6 @@ import { type User } from "../entities/user"
 import createUserFactory from "../factories/User"
 import validateBearerToken from "../utils/validateBearerToken"
 import type { Session } from "lucia"
-import { app } from ".."
 import ApiRequestFactory from "../factories/ApiRequest"
 
 describe("/signout", () => {

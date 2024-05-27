@@ -1,5 +1,4 @@
 import { describe, test, expect, beforeAll, setSystemTime } from "bun:test"
-import { app } from ".."
 import { faker } from "@faker-js/faker"
 import createUserFactory from "../factories/User"
 import { entity, type ResetToken } from "../entities/resettoken"
