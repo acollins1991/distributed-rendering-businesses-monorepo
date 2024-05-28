@@ -29,7 +29,7 @@ describe("/sites endpoints", () => {
             expect(res.status).toBe(400)
         })
 
-        test('creates a new site record', async () => {
+        test('creates a new site record with subdomain type', async () => {
             const newSiteName = 'Tesing Site' + crypto.randomUUID()
 
             const res = await new ApiRequestFactory("/api/sites", {
@@ -39,51 +39,53 @@ describe("/sites endpoints", () => {
             // check response
             expect(res.status).toBe(200)
 
-            const siteRecord = await entity.scan.where(({ name }, { eq }) => eq(name, newSiteName)).go()
+            const { data: [siteRecord] } = await entity.scan.where(({ name }, { eq }) => eq(name, newSiteName)).go()
 
-            expect(siteRecord.data[0].name).toBe(newSiteName)
-            expect(siteRecord.data[0].hosted_zone).toBeString()
+            expect(siteRecord.name).toBe(newSiteName)
+            expect(siteRecord.domain.type).toBe('subdomain')
 
             // siteId should now be in the user record
             const refreshedUserRecord = await userEntity.get({ userId: databaseUser.userId }).go()
-            expect(refreshedUserRecord.data?.sites).toContain(siteRecord.data[0].siteId)
+            expect(refreshedUserRecord.data?.sites).toContain(siteRecord.siteId)
 
             // site record should have a default template id that references a new template with default content
-            const templateId = siteRecord.data[0].default_template
+            const templateId = siteRecord.default_template
             const { data: template } = await templateEntity.get({ templateId }).go()
             expect(template).toBeTruthy()
             expect(template?.content).toBe(defaultTemplateContent)
         })
 
-        test('no two site records should occupy the same domain', async () => {
-            const domain = `${crypto.randomUUID()}.com`
-            // create existing site with domain
-            await entity.create({ name: 'Unique Domain Site', domain, hosted_zone: 'dummyhostingzone', default_template: '' }).go()
+        // test('no two site records should occupy the same domain', async () => {
+        //     const domain = `${crypto.randomUUID()}.com`
+        //     // create existing site with domain
+        //     await entity.create({ name: 'Unique Domain Site', domain, hosted_zone: 'dummyhostingzone', default_template: '' }).go()
 
-            const res = await new ApiRequestFactory('/api/sites', {
-                name: 'New Site',
-                domain
-            }).post.setAuthSession(bearerToken).go()
+        //     const res = await new ApiRequestFactory('/api/sites', {
+        //         name: 'New Site',
+        //         domain
+        //     }).post.setAuthSession(bearerToken).go()
 
-            expect(res.status).toBe(409)
+        //     expect(res.status).toBe(409)
 
-        })
+        // })
     })
 
     describe("PATCH", () => {
 
         test('site id must be in user record for successful update', async () => {
-            // preexisting setup hosted zone
-            const domain = `${crypto.randomUUID()}.com`
-            const hostedZone = await createHostedZone(domain)
+            // create site with different auth user
             const siteName = 'Tesing Site ' + crypto.randomUUID()
-            const { siteId } = await entity.create({ name: siteName, domain: domain, hosted_zone: hostedZone.HostedZone?.Id as string, default_template: '' }).go().then(res => res.data)
+            const existingSiteRes = await new ApiRequestFactory(`/api/sites`, {
+                name: siteName
+            }).post.addAuthSession().go()
+
+            const existingSite = await existingSiteRes.json()
 
             // expect item to exist
-            expect((await entity.get({ siteId }).go()).data).toBeTruthy()
+            expect((await entity.get({ siteId: existingSite.siteId }).go()).data).toBeTruthy()
 
             // update item
-            const res = await new ApiRequestFactory(`/api/sites/${siteId}`, {
+            const res = await new ApiRequestFactory(`/api/sites/${existingSite.siteId}`, {
                 name: 'Tesing Site ' + crypto.randomUUID()
             }).patch.setAuthSession(bearerToken).go()
 
@@ -92,19 +94,18 @@ describe("/sites endpoints", () => {
 
         test('updates the site record name', async () => {
             // preexisting setup hosted zone
-            const domain = `${crypto.randomUUID()}.com`
-            const hostedZone = await createHostedZone(domain)
-            const siteName = 'Tesing Site ' + crypto.randomUUID()
-            const { siteId } = await entity.create({ name: siteName, domain, hosted_zone: hostedZone.HostedZone?.Id as string, default_template: '' }).go().then(res => res.data)
-            // add siteId to user
-            await userEntity.update({ userId: databaseUser.userId }).append({ sites: [siteId] }).go()
+            const existingSiteRes = await new ApiRequestFactory(`/api/sites`, {
+                name: `Existing Site ${crypto.randomUUID()}`
+            }).post.setAuthSession(bearerToken).go()
+
+            const existingSite = await existingSiteRes.json()
 
             // expect item to exist
-            expect((await entity.get({ siteId }).go()).data).toBeTruthy()
+            expect((await entity.get({ siteId: existingSite.siteId }).go()).data).toBeTruthy()
 
             // update item
             const newSiteName = 'Tesing Site ' + crypto.randomUUID()
-            const res = await new ApiRequestFactory(`/api/sites/${siteId}`, {
+            const res = await new ApiRequestFactory(`/api/sites/${existingSite.siteId}`, {
                 name: newSiteName
             }).patch.setAuthSession(bearerToken).go()
 
@@ -113,65 +114,67 @@ describe("/sites endpoints", () => {
 
         })
 
-        test('updates the site record domain', async () => {
+        // test('updates the site record domain', async () => {
 
-            // preexisting setup hosted zone
-            const domain = `${crypto.randomUUID()}.com`
-            const hostedZone = await createHostedZone(domain)
+        //     // preexisting setup hosted zone
+        //     const domain = `${crypto.randomUUID()}.com`
+        //     const hostedZone = await createHostedZone(domain)
 
-            const siteName = 'Tesing Site ' + crypto.randomUUID()
+        //     const siteName = 'Tesing Site ' + crypto.randomUUID()
 
-            const { siteId } = await entity.create({ name: siteName, domain, hosted_zone: hostedZone.HostedZone?.Id as string, default_template: '' }).go().then(res => res.data)
-            // add siteId to user
-            await userEntity.update({ userId: databaseUser.userId }).append({ sites: [siteId] }).go()
+        //     const { siteId } = await entity.create({ name: siteName, domain, hosted_zone: hostedZone.HostedZone?.Id as string, default_template: '' }).go().then(res => res.data)
+        //     // add siteId to user
+        //     await userEntity.update({ userId: databaseUser.userId }).append({ sites: [siteId] }).go()
 
-            // expect item to exist
-            expect((await entity.get({ siteId }).go()).data).toBeTruthy()
+        //     // expect item to exist
+        //     expect((await entity.get({ siteId }).go()).data).toBeTruthy()
 
-            // update domain
-            const newDomain = friendlySitesDomainGenerator()
-            const res = await new ApiRequestFactory(`/api/sites/${siteId}`, {
-                domain: newDomain
-            }).patch.setAuthSession(bearerToken).go()
+        //     // update domain
+        //     const newDomain = friendlySitesDomainGenerator()
+        //     const res = await new ApiRequestFactory(`/api/sites/${siteId}`, {
+        //         domain: newDomain
+        //     }).patch.setAuthSession(bearerToken).go()
 
-            expect(res.status).toBe(200)
-            expect((await res.json()).domain).toBe(newDomain)
+        //     expect(res.status).toBe(200)
+        //     expect((await res.json()).domain).toBe(newDomain)
 
-        })
+        // })
     })
     describe('DELETE', () => {
         test('deletes the site record', async () => {
-            const domain = `${crypto.randomUUID()}.com`
             const siteName = 'Tesing Site ' + crypto.randomUUID()
-            const { siteId } = await entity.create({ name: siteName, domain, hosted_zone: 'dummyhostedzoneid', default_template: '' }).go().then(res => res.data)
-            // add siteId to user
-            await userEntity.update({ userId: databaseUser.userId }).append({ sites: [siteId] }).go()
+            const existingSiteRes = await new ApiRequestFactory(`/api/sites`, {
+                name: siteName
+            }).post.setAuthSession(bearerToken).go()
+
+            const existingSite = await existingSiteRes.json()
 
             // expect item to exist
-            expect((await entity.get({ siteId }).go()).data).toBeTruthy()
-            const res = await new ApiRequestFactory(`/api/sites/${siteId}`).delete.setAuthSession(bearerToken).go()
+            expect((await entity.get({ siteId: existingSite.siteId }).go()).data).toBeTruthy()
+            const res = await new ApiRequestFactory(`/api/sites/${existingSite.siteId}`).delete.setAuthSession(bearerToken).go()
 
             expect(res.status).toBe(200)
-            expect((await entity.get({ siteId }).go()).data).toBeFalsy()
+            expect((await entity.get({ siteId: existingSite.siteId }).go()).data).toBeFalsy()
 
         })
     })
 
     describe('GET site record', () => {
         test('gets the site record', async () => {
-            const domain = `${crypto.randomUUID()}.com`
             const siteName = 'Tesing Site ' + crypto.randomUUID()
-            const { siteId } = await entity.create({ name: siteName, domain, hosted_zone: 'dummyhostedzoneid', default_template: '' }).go().then(res => res.data)
-            // add siteId to user
-            await userEntity.update({ userId: databaseUser.userId }).append({ sites: [siteId] }).go()
+            const existingSiteRes = await new ApiRequestFactory(`/api/sites`, {
+                name: siteName
+            }).post.setAuthSession(bearerToken).go()
+
+            const existingSite = await existingSiteRes.json()
 
             // expect item to exist
-            expect((await entity.get({ siteId }).go()).data).toBeTruthy()
-            const res = await new ApiRequestFactory(`/api/sites/${siteId}`).get.setAuthSession(bearerToken).go()
+            expect((await entity.get({ siteId: existingSite.siteId }).go()).data).toBeTruthy()
+            const res = await new ApiRequestFactory(`/api/sites/${existingSite.siteId}`).get.setAuthSession(bearerToken).go()
 
             expect(res.status).toBe(200)
             const json = await res.json()
-            expect(json.siteId).toBe(siteId)
+            expect(json.siteId).toBe(existingSite.siteId)
         })
     })
 
@@ -342,7 +345,7 @@ describe("/sites endpoints", () => {
                 expect(json.name).toBe(newTemplateName)
 
                 const updatedRecord = await templateEntity.get({ templateId: templateRecord.templateId }).go()
-                expect(updatedRecord.data.name).toBe(newTemplateName)
+                expect(updatedRecord.data?.name).toBe(newTemplateName)
 
             })
 

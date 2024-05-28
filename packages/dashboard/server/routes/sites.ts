@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 import { friendlySitesDomainGenerator } from '../utils/friendlySitesDomainGenerator'
 import { createHostedZone, deleteHostedZone } from '../utils/manageHostedZone'
-import { entity, type Site } from '../entities/site'
+import { entity, type Domain, type Site } from '../entities/site'
 import apiValidateBearerTokenMiddleware from '../utils/apiValidateBearerTokenMiddleware'
 import type { User } from 'lucia'
 import { createMiddleware } from 'hono/factory'
@@ -75,16 +75,18 @@ sites.get(
 sites.post(
     "/",
     zValidator("json", z.object({
-        name: z.string(),
-        domain: z.string().optional()
+        name: z.string()
     })),
     async (c) => {
-        const { name, domain: reqDomain } = c.req.valid("json")
-
-        const domain = reqDomain ? reqDomain : friendlySitesDomainGenerator()
-        const hostedZone = await createHostedZone(domain)
+        const { name } = c.req.valid("json")
 
         try {
+
+            const domain: Domain = {
+                type: "subdomain",
+                value: friendlySitesDomainGenerator()
+            }
+
             /**
              * TODO: Should be a better way of doing this, currently using 3 db calls
              * We are creating the site record with an empty string as the default_template value as a palceholder,
@@ -94,18 +96,9 @@ sites.post(
              * Potentially we can generate the site ID manually so that we only make two db calls (possibly a transact write)
              */
 
-            // TODO: another call and using scan, not good
-            const { data: [existingSiteWithDomain] } = await entity.scan.where(({ domain: recordDomain }, { eq }) => eq(recordDomain, domain)).go()
-            if (existingSiteWithDomain) {
-                return c.json({
-                    messsage: 'Domain already taken'
-                }, 409)
-            }
-
             const { data: { siteId } } = await entity.create({
                 name,
                 domain,
-                hosted_zone: hostedZone.HostedZone?.Id as string,
                 // placeholder value
                 default_template: ''
             }).go()
@@ -122,7 +115,7 @@ sites.post(
             await userEntity.patch({ userId: user.userId }).append({ sites: [site.siteId] }).go()
 
             return c.json(site, 200)
-        } catch (e) {
+        } catch (e: any) {
             return c.json(e, 500)
         }
     })
@@ -131,8 +124,7 @@ sites.post(
 sites.patch(
     "/:siteId",
     zValidator("json", z.object({
-        name: z.string().optional(),
-        domain: z.string().optional()
+        name: z.string().optional()
     }).partial()),
     protectSiteRecordMiddleware('User cannot edit site record'),
     async (c) => {
@@ -142,15 +134,6 @@ sites.patch(
 
         const updatedRecordCommand = entity.patch({ siteId: existingRecord.siteId })
             .set(patchObject)
-
-        // if domain has changed update with new zone
-        if (patchObject.domain && patchObject.domain !== existingRecord?.domain) {
-            await deleteHostedZone(existingRecord.hosted_zone)
-            const newHostedZone = await createHostedZone(patchObject.domain)
-            updatedRecordCommand.set({
-                hosted_zone: newHostedZone.HostedZone?.Id
-            })
-        }
 
         const updatedRecord = await updatedRecordCommand
             // should return full record
@@ -196,7 +179,7 @@ const injectExistingTemplate = createMiddleware(async (c, next) => {
         c.set("template", template)
 
         await next()
-    } catch (e) {
+    } catch (e: any) {
         return c.json(e, 500)
     }
 })
@@ -221,7 +204,7 @@ sites.post(
             }).go()
 
             return c.json(template, 200)
-        } catch (e) {
+        } catch (e: any) {
             return c.json(e, 500)
         }
     })
@@ -252,7 +235,7 @@ sites.get(
                     nextPage: `${c.req.path}?cursor=${cursor}`
                 }
             }, 200)
-        } catch (e) {
+        } catch (e: any) {
             return c.json(e, 500)
         }
     })
@@ -263,7 +246,7 @@ sites.get(
         try {
             const template = c.get("template") as Template
             return c.json(template, 200)
-        } catch (e) {
+        } catch (e: any) {
             return c.json(e, 500)
         }
     })
@@ -280,7 +263,7 @@ sites.patch(
         try {
             const { data: template } = await templateEntity.patch({ templateId }).set(patchObject).go({ response: "all_new" })
             return c.json(template, 200)
-        } catch (e) {
+        } catch (e: any) {
             return c.json(e, 500)
         }
     })
@@ -292,7 +275,7 @@ sites.delete(
         try {
             const { data: template } = await templateEntity.delete({ templateId }).go()
             return c.json(template, 200)
-        } catch (e) {
+        } catch (e: any) {
             return c.json(e, 500)
         }
     })

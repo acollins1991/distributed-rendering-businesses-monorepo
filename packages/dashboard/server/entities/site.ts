@@ -1,5 +1,20 @@
-import { Entity, createSchema, type EntityItem } from "electrodb";
+import { Entity, createSchema, CustomAttributeType, type EntityItem } from "electrodb";
 import { client, table } from "../db/index"
+import { z } from "zod";
+
+const domainType = z.union([
+    z.object({
+        type: z.literal("custom"),
+        hosted_zone: z.string(),
+        value: z.string(),
+    }),
+    z.object({
+        type: z.literal("subdomain"),
+        value: z.string(),
+    }),
+]);
+
+export type Domain = z.infer<typeof domainType>;
 
 const schema = createSchema({
     model: {
@@ -18,12 +33,14 @@ const schema = createSchema({
             required: true
         },
         domain: {
-            type: 'string',
-            required: true
-        },
-        hosted_zone: {
-            type: 'string',
-            required: true
+            type: CustomAttributeType<Domain>("any"),
+            required: true,
+            validate: (val: any) => {
+                const { success } = domainType.safeParse(val)
+                if (!success) {
+                    return false
+                }
+            }
         },
         default_template: {
             type: 'string',

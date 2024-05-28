@@ -7,6 +7,7 @@ export default class ApiRequestFactory {
     endpoint: string;
     user?: Awaited<ReturnType<typeof createUserFactory>>["user"]
     session?: Awaited<ReturnType<typeof createUserFactory>>["session"]
+    private promises: Promise<any>[]
 
     constructor(endpoint: string, body?: Object) {
 
@@ -21,6 +22,8 @@ export default class ApiRequestFactory {
         if (body) {
             this.config.body = JSON.stringify(body)
         }
+
+        this.promises = []
     }
 
     get post() {
@@ -43,12 +46,24 @@ export default class ApiRequestFactory {
         return this
     }
 
+    addAuthSession() {
+        this.promises.push(createUserFactory().then(({ user, session }) => {
+            this.config.headers["authorization"] = `Bearer ${session.id}`
+            this.user = user
+        }))
+        return this
+    }
+
     setAuthSession(token: string) {
         this.config.headers["authorization"] = `Bearer ${token}`
         return this
     }
 
     async go() {
+
+        if (this.promises.length) {
+            await Promise.all(this.promises)
+        }
 
         return app.request(this.endpoint, this.config)
     }
