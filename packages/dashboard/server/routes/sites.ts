@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { friendlySitesDomainGenerator } from '../utils/friendlySitesDomainGenerator'
-import { createHostedZone, deleteHostedZone } from '../utils/manageHostedZone'
+import { addFriendlySitesDNSRecord, createHostedZone, deleteHostedZone } from '../utils/manageHostedZone'
 import { entity, type Domain, type Site } from '../entities/site'
 import apiValidateBearerTokenMiddleware from '../utils/apiValidateBearerTokenMiddleware'
 import type { User } from 'lucia'
@@ -114,8 +114,12 @@ sites.post(
             const user = c.get("user")
             await userEntity.patch({ userId: user.userId }).append({ sites: [site.siteId] }).go()
 
+            // add new record to default hosted zone
+            await addFriendlySitesDNSRecord(domain.value)
+
             return c.json(site, 200)
         } catch (e: any) {
+            console.log(e)
             return c.json(e, 500)
         }
     })

@@ -1,6 +1,7 @@
 import { beforeAll } from "bun:test"
-import { ensureTableExists } from "../packages/dashboard/utils/ensureTableExists"
+import { ensureHostedZoneExists, ensureTableExists } from "../packages/dashboard/utils/ensureResourcesExist"
 
 beforeAll(async () => {
     await ensureTableExists()
+    await ensureHostedZoneExists()
 })

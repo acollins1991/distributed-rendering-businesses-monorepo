@@ -154,39 +154,39 @@ resource "aws_security_group" "ssh_access_group" {
   }
 }
 
-resource "aws_instance" "dashboard_server" {
-  ami                    = "ami-01f10c2d6bce70d90"
-  instance_type          = "t2.micro"
-  iam_instance_profile   = aws_iam_instance_profile.ec2_access_profile.name
-  vpc_security_group_ids = [aws_security_group.ssh_access_group.id]
+# resource "aws_instance" "dashboard_server" {
+#   ami                    = "ami-01f10c2d6bce70d90"
+#   instance_type          = "t2.micro"
+#   iam_instance_profile   = aws_iam_instance_profile.ec2_access_profile.name
+#   vpc_security_group_ids = [aws_security_group.ssh_access_group.id]
 
-  depends_on = [aws_iam_instance_profile.ec2_access_profile, aws_dynamodb_table.friendly_sites_table, aws_s3_object.dashboard_zip]
+#   depends_on = [aws_iam_instance_profile.ec2_access_profile, aws_dynamodb_table.friendly_sites_table, aws_s3_object.dashboard_zip]
 
-  user_data_replace_on_change = true
+#   user_data_replace_on_change = true
 
-  user_data = <<-EOL
-  #!/bin/bash -xe
+#   user_data = <<-EOL
+#   #!/bin/bash -xe
 
-  su ec2-user -c 'aws configure set aws_access_key_id ${local.envs["AWS_ACCESS_KEY_ID"]}'
-  su ec2-user -c 'aws configure set aws_secret_access_key ${local.envs["AWS_SECRET_ACCESS_KEY"]}'
-  su ec2-user -c 'aws configure set default.region ${local.envs["AWS_REGION"]}'
+#   su ec2-user -c 'aws configure set aws_access_key_id ${local.envs["AWS_ACCESS_KEY_ID"]}'
+#   su ec2-user -c 'aws configure set aws_secret_access_key ${local.envs["AWS_SECRET_ACCESS_KEY"]}'
+#   su ec2-user -c 'aws configure set default.region ${local.envs["AWS_REGION"]}'
 
-  su ec2-user -c 'curl -fsSL https://bun.sh/install | bash && export BUN_INSTALL="$HOME/.bun" && export PATH="$BUN_INSTALL/bin:$PATH"'
-  su ec2-user -c 'sudo yum -y install yum-plugin-copr && sudo yum -y copr enable @caddy/caddy epel-7-$(arch) && sudo yum -y install caddy'
+#   su ec2-user -c 'curl -fsSL https://bun.sh/install | bash && export BUN_INSTALL="$HOME/.bun" && export PATH="$BUN_INSTALL/bin:$PATH"'
+#   su ec2-user -c 'sudo yum -y install yum-plugin-copr && sudo yum -y copr enable @caddy/caddy epel-7-$(arch) && sudo yum -y install caddy'
 
-  cd /home/ec2-user
-  su ec2-user -c 'aws s3 cp s3://${aws_s3_bucket.dashboard_source.id}/source.zip source.zip'
-  su ec2-user -c 'unzip source.zip'
-  su ec2-user -c 'mkdir dist'
-  su ec2-user -c 'mv client/ server/ dist/'
-  su ec2-user -c 'bun run dist/server/entry-server.js' & 
-  
-  sudo setcap cap_net_bind_service=+ep $(which caddy)
-  su ec2-user -c 'caddy reverse-proxy --from :80 --to :3000'
+#   cd /home/ec2-user
+#   su ec2-user -c 'aws s3 cp s3://${aws_s3_bucket.dashboard_source.id}/source.zip source.zip'
+#   su ec2-user -c 'unzip source.zip'
+#   su ec2-user -c 'mkdir dist'
+#   su ec2-user -c 'mv client/ server/ dist/'
+#   su ec2-user -c 'bun run dist/server/entry-server.js' & 
 
-  EOL
+#   sudo setcap cap_net_bind_service=+ep $(which caddy)
+#   su ec2-user -c 'caddy reverse-proxy --from :80 --to :3000'
 
-  tags = {
-    Project = local.project_name
-  }
-}
+#   EOL
+
+#   tags = {
+#     Project = local.project_name
+#   }
+# }

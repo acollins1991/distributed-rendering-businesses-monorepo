@@ -1,8 +1,7 @@
-import { test, describe, expect, beforeAll } from "bun:test"
+import { test, describe, expect, beforeAll, mock } from "bun:test"
+import { mock as mockType } from "vitest-mock-extended"
 import { entity, type Site } from "../entities/site"
 import createUserFactory from "../factories/User"
-import { createHostedZone } from "../utils/manageHostedZone"
-import { friendlySitesDomainGenerator } from "../utils/friendlySitesDomainGenerator"
 import type { Session } from "lucia"
 import type { User } from "../entities/user"
 import { entity as userEntity } from "../entities/user"
@@ -10,6 +9,7 @@ import { entity as templateEntity, type Template } from "../entities/template"
 import { faker } from "@faker-js/faker"
 import ApiRequestFactory from "../factories/ApiRequest"
 import defaultTemplateContent from "../../utils/defaultTemplateContent"
+import type { Distribution } from "@aws-sdk/client-cloudfront"
 
 describe("/sites endpoints", () => {
 
@@ -17,6 +17,19 @@ describe("/sites endpoints", () => {
     let bearerToken: Session["id"];
 
     beforeAll(async () => {
+
+        // mock cloudfront distribution retrieval
+        mock.module('../utils/taggedResources', () => {
+            const dummyDistribution: Distribution = Object.assign({}, mockType<Distribution>(), {
+                DomainName: 'cloudfrontdistribution.com'
+            })
+            return {
+                async getDefaultCloudfrontDistribution(): Promise<Distribution> {
+                    return dummyDistribution
+                }
+            }
+        })
+
         const { session, user } = await createUserFactory()
         databaseUser = user
         bearerToken = session.id
@@ -29,7 +42,7 @@ describe("/sites endpoints", () => {
             expect(res.status).toBe(400)
         })
 
-        test('creates a new site record with subdomain type', async () => {
+        test('creates a new site record with subdomain type, add adds dns record', async () => {
             const newSiteName = 'Tesing Site' + crypto.randomUUID()
 
             const res = await new ApiRequestFactory("/api/sites", {
@@ -53,6 +66,8 @@ describe("/sites endpoints", () => {
             const { data: template } = await templateEntity.get({ templateId }).go()
             expect(template).toBeTruthy()
             expect(template?.content).toBe(defaultTemplateContent)
+
+            // should have created 
         })
 
         // test('no two site records should occupy the same domain', async () => {

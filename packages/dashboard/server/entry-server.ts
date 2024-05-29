@@ -2,7 +2,7 @@ import { buildClient } from "../utils/buildClient"
 import path from "path"
 import { watch } from "fs";
 import type { Serve } from "bun";
-import { ensureTableExists } from "../utils/ensureTableExists";
+import { ensureTableExists } from "../utils/ensureResourcesExist";
 import { app } from "./honoApp";
 
 const isDev = process.env.MODE === 'development'
