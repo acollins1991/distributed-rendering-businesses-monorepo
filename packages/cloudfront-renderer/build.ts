@@ -4,5 +4,11 @@ await Bun.build({
     entrypoints: [join(__dirname, './index.ts')],
     outdir: '../../dist/handler',
     target: "node",
-    minify: true
+    naming: "[dir]/[name].mjs",
+    minify: {
+        whitespace: true,
+        syntax: true,
+        identifiers: false
+    },
+    splitting: false
 })

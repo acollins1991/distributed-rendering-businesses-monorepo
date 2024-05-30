@@ -6,7 +6,8 @@
     "build": "bun run build.ts"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@aws-sdk/client-cloudfront": "^3.583.0"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"

@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 import { friendlySitesDomainGenerator } from '../utils/friendlySitesDomainGenerator'
 import { addFriendlySitesDNSRecord, createHostedZone, deleteHostedZone } from '../utils/manageHostedZone'
-import { entity, type Domain, type Site } from '../entities/site'
+import { entity, type Site } from '../entities/site'
 import apiValidateBearerTokenMiddleware from '../utils/apiValidateBearerTokenMiddleware'
 import type { User } from 'lucia'
 import { createMiddleware } from 'hono/factory'
@@ -82,10 +82,7 @@ sites.post(
 
         try {
 
-            const domain: Domain = {
-                type: "subdomain",
-                value: friendlySitesDomainGenerator()
-            }
+            const domain = friendlySitesDomainGenerator()
 
             /**
              * TODO: Should be a better way of doing this, currently using 3 db calls
@@ -115,7 +112,7 @@ sites.post(
             await userEntity.patch({ userId: user.userId }).append({ sites: [site.siteId] }).go()
 
             // add new record to default hosted zone
-            await addFriendlySitesDNSRecord(domain.value)
+            await addFriendlySitesDNSRecord(domain)
 
             return c.json(site, 200)
         } catch (e: any) {

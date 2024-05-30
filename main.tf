@@ -122,8 +122,8 @@ resource "aws_iam_instance_profile" "ec2_access_profile" {
   role = aws_iam_role.ec2_access_role.name
 }
 
-resource "aws_security_group" "ssh_access_group" {
-  name = "ssh_access_group"
+resource "aws_security_group" "ec2_access_group" {
+  name = "ec2_access_group"
 
   ingress {
     from_port   = 22
@@ -154,39 +154,124 @@ resource "aws_security_group" "ssh_access_group" {
   }
 }
 
-# resource "aws_instance" "dashboard_server" {
-#   ami                    = "ami-01f10c2d6bce70d90"
-#   instance_type          = "t2.micro"
-#   iam_instance_profile   = aws_iam_instance_profile.ec2_access_profile.name
-#   vpc_security_group_ids = [aws_security_group.ssh_access_group.id]
 
-#   depends_on = [aws_iam_instance_profile.ec2_access_profile, aws_dynamodb_table.friendly_sites_table, aws_s3_object.dashboard_zip]
+resource "aws_instance" "dashboard_server" {
+  ami                    = "ami-01f10c2d6bce70d90"
+  instance_type          = "t2.micro"
+  iam_instance_profile   = aws_iam_instance_profile.ec2_access_profile.name
+  vpc_security_group_ids = [aws_security_group.ec2_access_group.id]
 
-#   user_data_replace_on_change = true
+  depends_on = [aws_iam_instance_profile.ec2_access_profile, aws_dynamodb_table.friendly_sites_table, aws_s3_object.dashboard_zip]
 
-#   user_data = <<-EOL
-#   #!/bin/bash -xe
+  user_data_replace_on_change = true
 
-#   su ec2-user -c 'aws configure set aws_access_key_id ${local.envs["AWS_ACCESS_KEY_ID"]}'
-#   su ec2-user -c 'aws configure set aws_secret_access_key ${local.envs["AWS_SECRET_ACCESS_KEY"]}'
-#   su ec2-user -c 'aws configure set default.region ${local.envs["AWS_REGION"]}'
+  user_data = <<-EOL
+  #!/bin/bash -xe
 
-#   su ec2-user -c 'curl -fsSL https://bun.sh/install | bash && export BUN_INSTALL="$HOME/.bun" && export PATH="$BUN_INSTALL/bin:$PATH"'
-#   su ec2-user -c 'sudo yum -y install yum-plugin-copr && sudo yum -y copr enable @caddy/caddy epel-7-$(arch) && sudo yum -y install caddy'
+  su ec2-user -c 'aws configure set aws_access_key_id ${local.envs["AWS_ACCESS_KEY_ID"]}'
+  su ec2-user -c 'aws configure set aws_secret_access_key ${local.envs["AWS_SECRET_ACCESS_KEY"]}'
+  su ec2-user -c 'aws configure set default.region ${local.envs["AWS_REGION"]}'
 
-#   cd /home/ec2-user
-#   su ec2-user -c 'aws s3 cp s3://${aws_s3_bucket.dashboard_source.id}/source.zip source.zip'
-#   su ec2-user -c 'unzip source.zip'
-#   su ec2-user -c 'mkdir dist'
-#   su ec2-user -c 'mv client/ server/ dist/'
-#   su ec2-user -c 'bun run dist/server/entry-server.js' & 
+  su ec2-user -c 'curl -fsSL https://bun.sh/install | bash && export BUN_INSTALL="$HOME/.bun" && export PATH="$BUN_INSTALL/bin:$PATH"'
+  su ec2-user -c 'sudo yum -y install yum-plugin-copr && sudo yum -y copr enable @caddy/caddy epel-7-$(arch) && sudo yum -y install caddy'
 
-#   sudo setcap cap_net_bind_service=+ep $(which caddy)
-#   su ec2-user -c 'caddy reverse-proxy --from :80 --to :3000'
+  cd /home/ec2-user
+  su ec2-user -c 'aws s3 cp s3://${aws_s3_bucket.dashboard_source.id}/source.zip source.zip'
+  su ec2-user -c 'unzip source.zip'
+  su ec2-user -c 'mkdir dist'
+  su ec2-user -c 'mv client/ server/ dist/'
+  su ec2-user -c 'bun run dist/server/entry-server.js' & 
 
-#   EOL
+  sudo setcap cap_net_bind_service=+ep $(which caddy)
+  su ec2-user -c 'caddy reverse-proxy --from :80 --to :3000'
+
+  EOL
+
+  tags = {
+    Project = local.project_name
+  }
+}
+
+### cloudfront and lambda@edge
+
+data "aws_iam_policy_document" "assume_role" {
+  statement {
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["lambda.amazonaws.com"]
+    }
+
+    actions = ["sts:AssumeRole"]
+  }
+}
+
+resource "aws_iam_role" "iam_for_lambda" {
+  name               = "iam_for_lambda"
+  assume_role_policy = data.aws_iam_policy_document.assume_role.json
+}
+
+data "archive_file" "lambda" {
+  type        = "zip"
+  source_file = local.lambda_path
+  output_path = "dist/lambda_function_payload.zip"
+}
+
+resource "aws_lambda_function" "test_lambda" {
+  filename      = "dist/lambda_function_payload.zip"
+  function_name = "lambda_function_name"
+  role          = aws_iam_role.iam_for_lambda.arn
+  handler       = "index.handler"
+
+  source_code_hash = data.archive_file.lambda.output_base64sha256
+
+  runtime = "nodejs18.x"
+}
+
+
+# resource "aws_cloudfront_distribution" "s3_distribution" {
+#   depends_on = [aws_lambda_function.test_lambda]
+
+#   origin {
+#     domain_name = "lambda.example.com" # Placeholder domain
+#     origin_id   = "lambda_origin"      # Unique identifier
+#   }
+
+#   enabled = true
+
+#   default_cache_behavior {
+#     allowed_methods  = ["GET", "HEAD", "OPTIONS"]
+#     cached_methods   = ["GET", "HEAD", "OPTIONS"]
+#     target_origin_id = aws_lambda_function.test_lambda.id
+
+
+#     lambda_function_association {
+#       event_type   = "viewer-request"
+#       lambda_arn   = aws_lambda_function.test_lambda.arn
+#       include_body = false
+#     }
+
+#     # min_ttl                = 0
+#     # default_ttl            = 86400
+#     # max_ttl                = 31536000
+#     # compress               = true
+#     viewer_protocol_policy = "redirect-to-https"
+#   }
+
+
+#   restrictions {
+#     geo_restriction {
+#       restriction_type = "none"
+#       locations        = []
+#     }
+#   }
 
 #   tags = {
-#     Project = local.project_name
+#     Environment = "production"
+#   }
+
+#   viewer_certificate {
+#     cloudfront_default_certificate = true
 #   }
 # }

@@ -1,12 +1,13 @@
 import { describe, test, expect, beforeAll, mock } from "bun:test"
-import type { CloudFrontRequestEvent, CloudFrontResponse } from 'aws-lambda';
+import type { CloudFrontRequestEvent } from 'aws-lambda';
+import type { Distribution } from "@aws-sdk/client-cloudfront"
 import handler from "../handler"
-import { entity as userEntity, type User } from "../../dashboard/server/entities/user";
-import { entity as siteEntity, type Site } from "../../dashboard/server/entities/site";
+import { type Site } from "../../dashboard/server/entities/site";
 import { entity as templateEntity, type Template } from "../../dashboard/server/entities/template";
 import ApiRequestFactory from "../../dashboard/server/factories/ApiRequest";
 import createUserFactory from "../../dashboard/server/factories/User";
 import defaultTemplateContent from "../../dashboard/utils/defaultTemplateContent";
+import { mock as mockType } from "vitest-mock-extended"
 
 // from https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/lambda-event-structure.html#lambda-event-structure-response
 const dummyEventObject = {
@@ -161,10 +162,22 @@ describe("cloudfront renderer function", () => {
     const domain = `${crypto.randomUUID()}.com`
 
     beforeAll(async () => {
+
+        // mock cloudfront distribution retrieval
+        mock.module('../../dashboard/server/utils/taggedResources', () => {
+            const dummyDistribution: Distribution = Object.assign({}, mockType<Distribution>(), {
+                DomainName: 'cloudfrontdistribution.com'
+            })
+            return {
+                async getDefaultCloudfrontDistribution(): Promise<Distribution> {
+                    return dummyDistribution
+                }
+            }
+        })
+
         const { session } = await createUserFactory()
         const res = await new ApiRequestFactory('/api/sites', {
-            name: 'Testing site',
-            domain
+            name: 'Testing site'
         }).post.setAuthSession(session.id).go()
 
         site = await res.json()
@@ -175,11 +188,10 @@ describe("cloudfront renderer function", () => {
     })
 
     test("renders a page", async () => {
-        const callbackSpy = mock()
 
-        await handler(createEvent(domain, '/testing123'), null, callbackSpy)
+        const res = await handler(createEvent(site.domain, '/testing123'), null)
 
-        expect(callbackSpy).toHaveBeenCalledWith(null, {
+        expect(res).toEqual({
             status: '200',
             statusDescription: 'OK',
             headers: {

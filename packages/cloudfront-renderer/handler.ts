@@ -1,4 +1,4 @@
-import type { CloudFrontResponseHandler, CloudFrontResponseResult } from 'aws-lambda';
+import type { CloudFrontResponseHandler } from 'aws-lambda';
 import { entity as siteEntity, type Site } from '../dashboard/server/entities/site';
 import { entity as templateEntity, type Template } from '../dashboard/server/entities/template';
 import Handlebars from 'handlebars';
@@ -16,7 +16,7 @@ async function compileTemplateFromTemplateRecord(templateId: Template["templateI
     return compiledTemplate
 }
 
-export const handler: CloudFrontResponseHandler = async (event, _, callback) => {
+export const handler: CloudFrontResponseHandler = async (event, _) => {
 
     const request = event.Records[0].cf.request
 
@@ -27,10 +27,13 @@ export const handler: CloudFrontResponseHandler = async (event, _, callback) => 
 
     // get relevant site record
     const site = await getSiteRecordFromUrl(url)
+
+    console.log(site)
+
     // TODO: just use default template for now
     const pageString = await compileTemplateFromTemplateRecord(site.default_template)
 
-    const response: CloudFrontResponseResult = {
+    return {
         status: '200',
         statusDescription: 'OK',
         headers: {
@@ -44,9 +47,7 @@ export const handler: CloudFrontResponseHandler = async (event, _, callback) => 
             }]
         },
         body: pageString,
-    };
-
-    callback(null, response);
+    }
 };
 
 export default handler

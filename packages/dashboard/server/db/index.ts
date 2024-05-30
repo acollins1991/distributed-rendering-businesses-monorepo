@@ -14,8 +14,6 @@ const clientParams = {
     credentials
 }
 
-console.log(credentials, clientParams)
-
 const client = new DynamoDBClient(isDev || isTest ? clientParams : {});
 
 const table = "friendly_sites";
