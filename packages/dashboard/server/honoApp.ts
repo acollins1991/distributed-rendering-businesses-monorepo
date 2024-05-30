@@ -7,14 +7,13 @@ import resetpassword from './routes/resetpassword'
 import user from './routes/user'
 import { serveStatic } from 'hono/bun'
 import { logger } from 'hono/logger'
-import { buildClient } from "../utils/buildClient"
-import path from "path"
 
 // @ts-ignore index file exists
 import html from "../index.html" with { type: "text" };
 import authenticate from './routes/authenticate'
 
 const isDev = process.env.MODE === 'development'
+const isTest = process.env.NODE_ENV === 'test'
 
 const app = new Hono()
 
@@ -47,7 +46,11 @@ app.get('/dist/client/*', serveStatic({
 }))
 
 const apiServer = new Hono()
-apiServer.use(logger())
+
+if (!isTest) {
+    apiServer.use(logger())
+}
+
 apiServer.route("/user", user)
 // sites
 apiServer.route("/sites", sites)

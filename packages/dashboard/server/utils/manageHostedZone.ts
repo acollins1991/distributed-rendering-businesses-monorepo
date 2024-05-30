@@ -63,7 +63,6 @@ export async function addFriendlySitesDNSRecord(name: string) {
         const command = new ChangeResourceRecordSetsCommand(input);
         return route53Client.send(command);
     } catch (error) {
-        console.log(error)
         throw new Error("Error creating DNS record")
     }
 }

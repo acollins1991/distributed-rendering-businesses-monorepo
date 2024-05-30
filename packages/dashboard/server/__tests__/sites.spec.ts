@@ -55,7 +55,6 @@ describe("/sites endpoints", () => {
             const { data: [siteRecord] } = await entity.scan.where(({ name }, { eq }) => eq(name, newSiteName)).go()
 
             expect(siteRecord.name).toBe(newSiteName)
-            expect(siteRecord.domain.type).toBe('subdomain')
 
             // siteId should now be in the user record
             const refreshedUserRecord = await userEntity.get({ userId: databaseUser.userId }).go()

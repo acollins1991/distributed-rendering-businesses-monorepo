@@ -116,7 +116,6 @@ sites.post(
 
             return c.json(site, 200)
         } catch (e: any) {
-            console.log(e)
             return c.json(e, 500)
         }
     })

@@ -16,7 +16,7 @@ async function compileTemplateFromTemplateRecord(templateId: Template["templateI
     return compiledTemplate
 }
 
-export const handler: CloudFrontResponseHandler = async (event, _) => {
+export const handler: CloudFrontResponseHandler = async (event) => {
 
     const request = event.Records[0].cf.request
 
@@ -27,8 +27,6 @@ export const handler: CloudFrontResponseHandler = async (event, _) => {
 
     // get relevant site record
     const site = await getSiteRecordFromUrl(url)
-
-    console.log(site)
 
     // TODO: just use default template for now
     const pageString = await compileTemplateFromTemplateRecord(site.default_template)

@@ -189,7 +189,7 @@ describe("cloudfront renderer function", () => {
 
     test("renders a page", async () => {
 
-        const res = await handler(createEvent(site.domain, '/testing123'), null)
+        const res = await handler(createEvent(site.domain, '/testing123'))
 
         expect(res).toEqual({
             status: '200',

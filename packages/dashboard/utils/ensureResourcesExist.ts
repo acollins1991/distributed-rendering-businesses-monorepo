@@ -24,6 +24,6 @@ export async function ensureHostedZoneExists() {
     try {
         await createHostedZone(process.env.DEFAULT_HOSTED_ZONE_NAME as string)
     } catch (e) {
-        console.log(e)
+        console.log('123, ', e)
     }
 }
