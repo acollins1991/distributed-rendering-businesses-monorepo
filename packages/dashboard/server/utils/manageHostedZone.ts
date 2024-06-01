@@ -2,6 +2,8 @@ import { CreateHostedZoneCommand, DeleteHostedZoneCommand, ChangeResourceRecordS
 import { client as route53Client } from "./route53Client";
 import { getDefaultCloudfrontDistribution } from "./taggedResources"
 
+const isDev = process.env.MODE === 'development'
+
 export async function createHostedZone(domain: string) {
     const input = {
         Name: domain,
@@ -40,7 +42,7 @@ export async function getDefaultHostedZone() {
 export async function addFriendlySitesDNSRecord(name: string) {
     try {
         const defaultHostedZone = await getDefaultHostedZone()
-        const distribution = await getDefaultCloudfrontDistribution()
+        const distribution = isDev ? { DomainName: 'dummycloudfrontdistribution.com' } : await getDefaultCloudfrontDistribution()
         const input: ChangeResourceRecordSetsCommandInput = {
             HostedZoneId: defaultHostedZone.Id,
             ChangeBatch: {
