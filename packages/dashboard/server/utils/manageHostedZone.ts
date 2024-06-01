@@ -54,15 +54,18 @@ export async function addFriendlySitesDNSRecord(name: string) {
                                     Value: distribution.DomainName
                                 },
                             ],
-                            Type: "A"
+                            Type: "CNAME",
+                            TTL: 60
                         },
                     },
                 ],
             },
         };
+
         const command = new ChangeResourceRecordSetsCommand(input);
         return route53Client.send(command);
     } catch (error) {
+        console.log(error)
         throw new Error("Error creating DNS record")
     }
 }

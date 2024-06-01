@@ -18,7 +18,9 @@ const clientParams = {
     credentials
 }
 
-const client = new ResourceGroupsTaggingAPI(isDev || isTest ? clientParams : {})
+const clientArgs = Object.assign({}, isDev || isTest ? clientParams : {})
+
+const client = new ResourceGroupsTaggingAPI(clientArgs)
 
 let default_cloudfront_distribution: Distribution;
 export async function getDefaultCloudfrontDistribution() {
@@ -27,7 +29,10 @@ export async function getDefaultCloudfrontDistribution() {
         return default_cloudfront_distribution
     }
 
+    const usEast1Client = new ResourceGroupsTaggingAPI(Object.assign({}, clientArgs, { region: "us-east-1" }))
+
     const input: GetResourcesCommandInput = {
+        ResourceTypeFilters: ["cloudfront"],
         TagFilters: [
             {
                 Key: process.env.DEFAULT_CLOUDFRONT_DISTRIBUTION_ID
@@ -36,10 +41,10 @@ export async function getDefaultCloudfrontDistribution() {
     }
 
     const command = new GetResourcesCommand(input)
-    const resouces = await client.send(command)
+    const resouces = await usEast1Client.send(command)
     const distributionList = resouces.ResourceTagMappingList
 
-    if (!distributionList) {
+    if (!distributionList.length) {
         throw Error('No distribution found from tagged resources')
     }
 

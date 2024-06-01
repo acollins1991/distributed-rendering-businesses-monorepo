@@ -15,6 +15,14 @@ provider "aws" {
   secret_key = local.envs["AWS_SECRET_ACCESS_KEY"]
 }
 
+# needed for lambda@edge as these can only be deployed to us-east-1 region
+provider "aws" {
+  alias      = "us-east-1"
+  region     = "us-east-1"
+  access_key = local.envs["AWS_ACCESS_KEY_ID"]
+  secret_key = local.envs["AWS_SECRET_ACCESS_KEY"]
+}
+
 resource "aws_s3_bucket" "dashboard_source" {
   bucket = local.dashboard_source_bucket_name
 
@@ -199,8 +207,11 @@ data "aws_iam_policy_document" "assume_role" {
     effect = "Allow"
 
     principals {
-      type        = "Service"
-      identifiers = ["lambda.amazonaws.com"]
+      type = "Service"
+      identifiers = [
+        "edgelambda.amazonaws.com",
+        "lambda.amazonaws.com",
+      ]
     }
 
     actions = ["sts:AssumeRole"]
@@ -219,6 +230,10 @@ data "archive_file" "lambda" {
 }
 
 resource "aws_lambda_function" "test_lambda" {
+
+  # use us-east-1 region provider
+  provider = aws.us-east-1
+
   filename      = "dist/lambda_function_payload.zip"
   function_name = "lambda_function_name"
   role          = aws_iam_role.iam_for_lambda.arn
@@ -227,51 +242,67 @@ resource "aws_lambda_function" "test_lambda" {
   source_code_hash = data.archive_file.lambda.output_base64sha256
 
   runtime = "nodejs18.x"
+
+  publish = true
 }
 
+resource "aws_s3_bucket" "dummy_s3_bucket_for_cloudfront_origin" {
+  bucket = "dummy-s3-bucket-for-cloudfront-origin"
+}
 
-# resource "aws_cloudfront_distribution" "s3_distribution" {
-#   depends_on = [aws_lambda_function.test_lambda]
+locals {
+  cloudfront_distribution_origin_id = "cloudfront_distribution_proxy_1234567"
+}
 
-#   origin {
-#     domain_name = "lambda.example.com" # Placeholder domain
-#     origin_id   = "lambda_origin"      # Unique identifier
-#   }
+resource "aws_cloudfront_distribution" "cloudfront_distribution" {
+  depends_on = [aws_lambda_function.test_lambda]
 
-#   enabled = true
+  origin {
+    domain_name = aws_s3_bucket.dummy_s3_bucket_for_cloudfront_origin.bucket_regional_domain_name
+    origin_id   = local.cloudfront_distribution_origin_id # Unique identifier
+  }
 
-#   default_cache_behavior {
-#     allowed_methods  = ["GET", "HEAD", "OPTIONS"]
-#     cached_methods   = ["GET", "HEAD", "OPTIONS"]
-#     target_origin_id = aws_lambda_function.test_lambda.id
+  enabled = true
+
+  default_cache_behavior {
+    allowed_methods  = ["GET", "HEAD", "OPTIONS"]
+    cached_methods   = ["GET", "HEAD", "OPTIONS"]
+    target_origin_id = local.cloudfront_distribution_origin_id
+
+    forwarded_values {
+      query_string = false
+      cookies {
+        forward = "none"
+      }
+    }
+
+    lambda_function_association {
+      event_type   = "viewer-request"
+      lambda_arn   = aws_lambda_function.test_lambda.qualified_arn
+      include_body = false
+    }
+
+    # min_ttl                = 0
+    # default_ttl            = 86400
+    # max_ttl                = 31536000
+    # compress               = true
+    viewer_protocol_policy = "redirect-to-https"
+  }
 
 
-#     lambda_function_association {
-#       event_type   = "viewer-request"
-#       lambda_arn   = aws_lambda_function.test_lambda.arn
-#       include_body = false
-#     }
+  restrictions {
+    geo_restriction {
+      restriction_type = "none"
+      locations        = []
+    }
+  }
 
-#     # min_ttl                = 0
-#     # default_ttl            = 86400
-#     # max_ttl                = 31536000
-#     # compress               = true
-#     viewer_protocol_policy = "redirect-to-https"
-#   }
+  tags = {
+    Project                         = local.project_name
+    default_cloudfront_distribution = true
+  }
 
-
-#   restrictions {
-#     geo_restriction {
-#       restriction_type = "none"
-#       locations        = []
-#     }
-#   }
-
-#   tags = {
-#     Environment = "production"
-#   }
-
-#   viewer_certificate {
-#     cloudfront_default_certificate = true
-#   }
-# }
+  viewer_certificate {
+    cloudfront_default_certificate = true
+  }
+}
