@@ -1,9 +1,9 @@
 import type { User } from 'lucia'
 import { create } from 'zustand'
-import { combine } from 'zustand/middleware'
 import apiClient from "../utils/apiClient"
 import authenticatedApiClient from "../utils/authenticatedApiClient"
 import { getTokenCookie, removeTokenCookie, setTokenCookie } from '../utils/tokenCookie'
+import type { Site } from '../../server/entities/site'
 
 interface UserStore {
     user: User | null,
@@ -26,7 +26,11 @@ interface UserStore {
         token: string
     } | null>,
     signoutUser: () => Promise<void>,
-    refreshUser: () => Promise<void>
+    refreshUser: () => Promise<void>,
+    addNewSite: (args: {
+        name: string,
+        domain?: string
+    }) => Promise<Site>
 }
 
 const useUserStore = create<UserStore>((set) => ({
@@ -140,10 +144,7 @@ const useUserStore = create<UserStore>((set) => ({
             return state
         })
     },
-    async addNewSite(args: {
-        name: string,
-        domain?: string
-    }) {
+    async addNewSite(args) {
         const res = await authenticatedApiClient.sites.$post({
             json: args
         })
@@ -152,7 +153,7 @@ const useUserStore = create<UserStore>((set) => ({
             return
         }
 
-        const json = await res.json()
+        const json = await res.json() as Site
 
         const { refreshUser } = useUserStore()
 

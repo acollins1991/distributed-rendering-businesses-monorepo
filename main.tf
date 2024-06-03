@@ -176,6 +176,9 @@ resource "aws_instance" "dashboard_server" {
   user_data = <<-EOL
   #!/bin/bash -xe
 
+  # should ensure the ec2 instance is redeployed when the dashboard source changes
+  echo ${aws_s3_object.dashboard_zip.etag}
+
   su ec2-user -c 'aws configure set aws_access_key_id ${local.envs["AWS_ACCESS_KEY_ID"]}'
   su ec2-user -c 'aws configure set aws_secret_access_key ${local.envs["AWS_SECRET_ACCESS_KEY"]}'
   su ec2-user -c 'aws configure set default.region ${local.envs["AWS_REGION"]}'
@@ -221,6 +224,10 @@ data "aws_iam_policy_document" "assume_role" {
 resource "aws_iam_role" "iam_for_lambda" {
   name               = "iam_for_lambda"
   assume_role_policy = data.aws_iam_policy_document.assume_role.json
+
+  managed_policy_arns = [
+    "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
+  ]
 }
 
 data "archive_file" "lambda" {
@@ -246,6 +253,18 @@ resource "aws_lambda_function" "test_lambda" {
   publish = true
 }
 
+resource "aws_s3_bucket_website_configuration" "example" {
+  bucket = aws_s3_bucket.dummy_s3_bucket_for_cloudfront_origin.id
+
+  index_document {
+    suffix = "index.html"
+  }
+
+  error_document {
+    key = "error.html"
+  }
+}
+
 resource "aws_s3_bucket" "dummy_s3_bucket_for_cloudfront_origin" {
   bucket = "dummy-s3-bucket-for-cloudfront-origin"
 }
@@ -258,8 +277,8 @@ resource "aws_cloudfront_distribution" "cloudfront_distribution" {
   depends_on = [aws_lambda_function.test_lambda]
 
   origin {
-    domain_name = aws_s3_bucket.dummy_s3_bucket_for_cloudfront_origin.bucket_regional_domain_name
-    origin_id   = local.cloudfront_distribution_origin_id # Unique identifier
+    domain_name = aws_s3_bucket.dummy_s3_bucket_for_cloudfront_origin.bucket_domain_name
+    origin_id   = local.cloudfront_distribution_origin_id
   }
 
   enabled = true
@@ -277,16 +296,15 @@ resource "aws_cloudfront_distribution" "cloudfront_distribution" {
     }
 
     lambda_function_association {
-      event_type   = "viewer-request"
-      lambda_arn   = aws_lambda_function.test_lambda.qualified_arn
-      include_body = false
+      event_type = "origin-request"
+      lambda_arn = aws_lambda_function.test_lambda.qualified_arn
     }
 
-    # min_ttl                = 0
-    # default_ttl            = 86400
-    # max_ttl                = 31536000
-    # compress               = true
-    viewer_protocol_policy = "redirect-to-https"
+    min_ttl                = 0
+    default_ttl            = 86400
+    max_ttl                = 31536000
+    compress               = true
+    viewer_protocol_policy = "allow-all"
   }
 
 

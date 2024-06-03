@@ -3,9 +3,10 @@ import Button from 'react-bootstrap/Button';
 import Modal from 'react-bootstrap/Modal';
 import Form from 'react-bootstrap/Form';
 import { useUserStore } from '../store/user';
+import type { Site } from '../../server/entities/site';
 
 
-export default () => {
+export default ({ onNewSiteAdded }: { onNewSiteAdded: (newSite: Site) => void }) => {
     const [show, setShow] = useState(false);
 
     const handleClose = () => setShow(false);
@@ -25,7 +26,7 @@ export default () => {
         } = {}
         formData.forEach((value: string, key: string) => submissionObject[key] = value);
 
-        addNewSite(submissionObject)
+        addNewSite(submissionObject).then(res => onNewSiteAdded(res))
     }
 
     return (
