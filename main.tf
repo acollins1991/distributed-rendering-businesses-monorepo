@@ -273,15 +273,39 @@ locals {
   cloudfront_distribution_origin_id = "cloudfront_distribution_proxy_1234567"
 }
 
+resource "aws_route53_record" "cloudfront_alias_record" {
+  zone_id = "Z08252061K6DE4BQKWVWJ"
+  name    = "*.pagegenerator.link"
+  type    = "A"
+
+  alias {
+    # name                   = aws_elb.main.dns_name
+    # zone_id                = aws_elb.main.zone_id
+    name                   = aws_cloudfront_distribution.cloudfront_distribution.domain_name
+    zone_id                = aws_cloudfront_distribution.cloudfront_distribution.hosted_zone_id
+    evaluate_target_health = true
+  }
+}
+
 resource "aws_cloudfront_distribution" "cloudfront_distribution" {
   depends_on = [aws_lambda_function.test_lambda]
 
+  aliases = ["pagegenerator.link", "*.pagegenerator.link"]
+
   origin {
+    # custom_origin_config {
+    #   http_port              = 80
+    #   https_port             = 443
+    #   origin_protocol_policy = "match-viewer"
+    #   origin_ssl_protocols   = ["TLSv1.2"]
+    # }
     domain_name = aws_s3_bucket.dummy_s3_bucket_for_cloudfront_origin.bucket_domain_name
     origin_id   = local.cloudfront_distribution_origin_id
   }
 
   enabled = true
+
+  http_version = "http2"
 
   default_cache_behavior {
     allowed_methods  = ["GET", "HEAD", "OPTIONS"]
@@ -293,6 +317,7 @@ resource "aws_cloudfront_distribution" "cloudfront_distribution" {
       cookies {
         forward = "none"
       }
+      headers = ["Host"]
     }
 
     lambda_function_association {
@@ -321,6 +346,8 @@ resource "aws_cloudfront_distribution" "cloudfront_distribution" {
   }
 
   viewer_certificate {
-    cloudfront_default_certificate = true
+    acm_certificate_arn      = "arn:aws:acm:us-east-1:258587214769:certificate/bf050f0d-fcc2-4a2f-838a-7963f0c8ce69"
+    minimum_protocol_version = "TLSv1.2_2021"
+    ssl_support_method       = "sni-only"
   }
 }

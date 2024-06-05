@@ -1,7 +1,6 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { friendlySitesDomainGenerator } from '../utils/friendlySitesDomainGenerator'
-import { addFriendlySitesDNSRecord, createHostedZone, deleteHostedZone } from '../utils/manageHostedZone'
 import { entity, type Site } from '../entities/site'
 import apiValidateBearerTokenMiddleware from '../utils/apiValidateBearerTokenMiddleware'
 import type { User } from 'lucia'
@@ -110,9 +109,6 @@ sites.post(
             // add new site id to the user record as ownership signal
             const user = c.get("user")
             await userEntity.patch({ userId: user.userId }).append({ sites: [site.siteId] }).go()
-
-            // add new record to default hosted zone
-            await addFriendlySitesDNSRecord(domain)
 
             return c.json(site, 200)
         } catch (e: any) {

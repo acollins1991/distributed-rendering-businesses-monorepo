@@ -22,8 +22,9 @@ export const handler: CloudFrontResponseHandler = async (event) => {
 
     const origin = request.headers["host"][0].value
     const pathname = request.uri
+    const fullUrl = `https://${origin}${pathname}`
 
-    const url = new URL(`https://${origin}${pathname}`)
+    const url = new URL(fullUrl.endsWith('/') ? fullUrl.slice(0, -1) : fullUrl)
 
     // get relevant site record
     const site = await getSiteRecordFromUrl(url)
