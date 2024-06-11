@@ -2,12 +2,13 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 import { friendlySitesDomainGenerator } from '../utils/friendlySitesDomainGenerator'
 import { entity, type Site } from '../entities/site'
-import apiValidateBearerTokenMiddleware from '../utils/apiValidateBearerTokenMiddleware'
+import apiValidateAuthCookie from '../utils/apiValidateAuthCookie'
 import type { User } from 'lucia'
 import { createMiddleware } from 'hono/factory'
 import { entity as userEntity } from "../entities/user"
 import { entity as templateEntity, type Template } from "../entities/template"
 import { zValidator } from '@hono/zod-validator'
+// import { SitesService } from '../entities/services/sites'
 
 function protectSiteRecordMiddleware(failedMessage: string) {
     return createMiddleware(async (c, next) => {
@@ -49,7 +50,7 @@ const sites = new Hono<{
 }>()
 
 // protect these routes
-sites.use("*", apiValidateBearerTokenMiddleware)
+sites.use("*", apiValidateAuthCookie)
 // sites targeting specific site inject site record to site var
 sites.use("/:siteId/*", setSiteRecordMiddleware)
 
@@ -99,7 +100,7 @@ sites.post(
                 default_template: ''
             }).go()
 
-            const { data: template } = await templateEntity.create({ siteId, name: "Default" }).go()
+            const { data: template } = await templateEntity.create({ siteId, name: "Default", path: '/' }).go()
 
             // add template
             const { data: site } = await entity.patch({ siteId }).set({
@@ -186,17 +187,26 @@ sites.use("/:siteId/templates/:templateId/*", injectExistingTemplate)
 sites.post(
     "/:siteId/templates",
     zValidator("json", z.object({
-        name: z.string()
+        name: z.string(),
+        path: z.string().refine((val) => {
+            if (val === '/') {
+                return true
+            }
+            const urlPathRegex = /^\/?([a-zA-Z0-9\-._~:\/@]*)*\/?$/;
+            return urlPathRegex.test(val);
+        }, {
+            message: "Path must be a valid URL path string value",
+        })
     })),
     async (c) => {
         const site = c.get("site")
-        const { name } = c.req.valid("json")
+        const { name, path } = c.req.valid("json")
 
         try {
-
             const { data: template } = await templateEntity.create({
                 name,
-                siteId: site.siteId
+                siteId: site.siteId,
+                path
             }).go()
 
             return c.json(template, 200)

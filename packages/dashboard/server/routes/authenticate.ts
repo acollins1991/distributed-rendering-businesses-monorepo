@@ -1,5 +1,9 @@
 import { Hono } from "hono";
-import validateBearerToken from "../utils/validateBearerToken";
+import validateBearerToken from "../utils/validateAuthCookie";
+import { getCookie } from "hono/cookie";
+import { tokenCookieName } from "../utils/apiValidateAuthCookie";
+
+tokenCookieName
 
 const authenticate = new Hono()
 
@@ -7,11 +11,11 @@ authenticate.post(
     "/",
     async (c) => {
 
-        const token = c.req.header('authorization')?.replace('Bearer ', '')
+        const token = getCookie(c, tokenCookieName)
 
         if (!token) {
             return c.json({
-                message: 'Missing bearer token'
+                message: 'Missing authentication'
             }, 400)
         }
 
@@ -24,7 +28,7 @@ authenticate.post(
                 user: valid ? user : null
             }, 200)
 
-        } catch (e) {
+        } catch (e: any) {
             return c.json(e, 400)
         }
     })

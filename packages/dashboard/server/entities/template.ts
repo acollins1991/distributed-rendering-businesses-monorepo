@@ -1,7 +1,9 @@
-import { Entity, createSchema, type EntityItem } from "electrodb";
+import { Entity, createSchema, CustomAttributeType, type EntityItem } from "electrodb";
 import { client, table } from "../db/index"
 import defaultTemplateContent from "../../utils/defaultTemplateContent";
-import isHtml from 'is-html';
+import isHtml from "is-html"
+import type { Editor, ProjectData } from "grapesjs";
+import type { z } from "zod";
 
 const schema = createSchema({
     model: {
@@ -24,9 +26,17 @@ const schema = createSchema({
             type: 'string',
             required: true
         },
-        content: {
+        path: {
             type: 'string',
-            default: () => defaultTemplateContent
+            required: true
+        },
+        // content: {
+        //     type: 'string',
+        //     default: () => defaultTemplateContent,
+        //     validate: (value) => !isHtml(value)
+        // },
+        content: {
+            type: CustomAttributeType<ProjectData>("any")
         },
         variables: {
             type: 'any',

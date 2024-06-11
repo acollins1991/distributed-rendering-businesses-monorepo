@@ -1,16 +1,19 @@
 import { Hono } from "hono";
-import type { LambdaBindings } from "../../types";
 import { auth } from "../auth";
-import apiValidateBearerTokenMiddleware from "../utils/apiValidateBearerTokenMiddleware";
+import apiValidateAuthCookie from "../utils/apiValidateAuthCookie";
 import type { User } from "lucia";
 
-const signout = new Hono<{ Bindings: LambdaBindings }>()
+const signout = new Hono<{
+    Variables: {
+        user: User
+    }
+}>()
 
 signout.post(
     "/",
-    apiValidateBearerTokenMiddleware,
+    apiValidateAuthCookie,
     async (c) => {
-        const user = c.get("user") as User
+        const user = c.get("user")
         await auth.invalidateUserSessions(user.id)
         return c.json({
             message: 'User signed out'

@@ -1,9 +1,13 @@
+import type { HonoRequest } from "hono";
 import { app } from "../honoApp";
+import { tokenCookieName } from "../utils/apiValidateAuthCookie";
 import createUserFactory from "./User";
+import { setCookie } from "hono/cookie";
 
 export default class ApiRequestFactory {
 
     private config: RequestInit;
+    private cookie: string | null;
     endpoint: string;
     user?: Awaited<ReturnType<typeof createUserFactory>>["user"]
     session?: Awaited<ReturnType<typeof createUserFactory>>["session"]
@@ -24,6 +28,8 @@ export default class ApiRequestFactory {
         }
 
         this.promises = []
+
+        this.cookie = null
     }
 
     get post() {
@@ -48,14 +54,14 @@ export default class ApiRequestFactory {
 
     addAuthSession() {
         this.promises.push(createUserFactory().then(({ user, session }) => {
-            this.config.headers["authorization"] = `Bearer ${session.id}`
+            this.cookie = session.id
             this.user = user
         }))
         return this
     }
 
     setAuthSession(token: string) {
-        this.config.headers["authorization"] = `Bearer ${token}`
+        this.cookie = token
         return this
     }
 
@@ -64,6 +70,13 @@ export default class ApiRequestFactory {
         if (this.promises.length) {
             await Promise.all(this.promises)
         }
+
+        // add auth cookie
+        if (this.cookie) {
+            this.config.headers['Cookie'] = `${tokenCookieName}=${this.cookie}`
+        }
+
+        const request = app.request(this.endpoint, this.config)
 
         return app.request(this.endpoint, this.config)
     }

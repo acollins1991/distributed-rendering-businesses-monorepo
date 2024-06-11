@@ -4,7 +4,7 @@ import { entity } from "../../entities/user"
 import { faker } from "@faker-js/faker"
 import { auth } from "../../auth"
 import { add } from "date-fns"
-import validateBearerToken from "../validateBearerToken"
+import validateBearerToken from "../validateAuthCookie"
 
 describe("validateBearerToken", () => {
     let databaseUser: DatabaseUser

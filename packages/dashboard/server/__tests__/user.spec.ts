@@ -2,7 +2,7 @@ import { describe, test, expect, beforeAll } from "bun:test"
 import { entity, type User } from "../entities/user"
 import { faker } from "@faker-js/faker"
 import createUserFactory from "../factories/User"
-import validateBearerToken from "../utils/validateBearerToken"
+import validateBearerToken from "../utils/validateAuthCookie"
 import type { Session } from "lucia"
 import ApiRequestFactory from "../factories/ApiRequest"
 

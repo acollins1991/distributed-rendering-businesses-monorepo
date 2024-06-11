@@ -1,7 +1,7 @@
 import { describe, test, expect } from "bun:test"
 import createUserFactory from "../factories/User"
 import ApiRequestFactory from "../factories/ApiRequest"
-import validateBearerToken from "../utils/validateBearerToken"
+import validateBearerToken from "../utils/validateAuthCookie"
 
 describe("/authenticate", () => {
     describe("POST", () => {

@@ -37,3 +37,5 @@ process.on("exit", () => {
     console.log('server stopped')
 })
 
+export type AppType = typeof app
+

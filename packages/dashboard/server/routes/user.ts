@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import apiValidateBearerTokenMiddleware from "../utils/apiValidateBearerTokenMiddleware";
+import apiValidateAuthCookie from "../utils/apiValidateAuthCookie";
 import type { User } from "lucia";
 import { entity } from "../entities/user";
 import { z } from "zod";
@@ -13,13 +13,13 @@ const user = new Hono<{
 
 user.get(
     "/",
-    apiValidateBearerTokenMiddleware,
+    apiValidateAuthCookie,
     async (c) => {
         try {
             const user = c.get("user") as User
             return c.json(user, 200)
 
-        } catch (e) {
+        } catch (e: any) {
             return c.json(e, 400)
         }
     })
@@ -31,7 +31,7 @@ user.patch(
         last_name: z.string(),
         email: z.string()
     }).partial()),
-    apiValidateBearerTokenMiddleware,
+    apiValidateAuthCookie,
     async (c) => {
 
         const patchObject = c.req.valid("json")
@@ -46,7 +46,7 @@ user.patch(
 
             return c.json(updatedUser, 200)
 
-        } catch (e) {
+        } catch (e: any) {
             return c.json(e, 400)
         }
     })
