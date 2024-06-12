@@ -1,4 +1,4 @@
-FROM oven/bun:1.1.10-debian
+FROM oven/bun:1.1.13-debian
 
 RUN apt update && apt install git curl wget unzip zip -y
 
