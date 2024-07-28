@@ -1,8 +1,7 @@
-import * as ReactDOM from "react-dom/client";
-import App from "./App";
+import { App } from "./App";
+import { render } from "solid-js/web";
+import './assets/app.css'
 
-const root = ReactDOM.createRoot(document.getElementById('root')!);
-
-root.render(
-    <App />
-)
+const root = document.getElementById('root')
+console.log(root)
+render(() => <App />, root)

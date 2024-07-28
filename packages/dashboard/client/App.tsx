@@ -1,36 +1,21 @@
-import { StrictMode, useEffect, useState } from "react";
-import {
-    RouterProvider,
-} from "react-router-dom";
-import { router } from "./router"
-import { useUserStore } from "./store/user";
-import { getTokenCookie } from "./utils/tokenCookie";
+import { onCleanup, createSignal } from "solid-js";
 
-import AppNavbar from "./components/AppNavbar"
+const CountingComponent = () => {
+    const [count, setCount] = createSignal(0);
+    const interval = setInterval(
+        () => setCount(count => count + 1),
+        1000
+    );
+    onCleanup(() => clearInterval(interval));
+    return <div>Count value is {count()}</div>;
+};
 
-
-export default () => {
-
-    const [authChecked, setAuthChecked] = useState(false)
-    const { authenticateFromCookie, isAuthenticated } = useUserStore()
-
-    useEffect(() => {
-        if (Boolean(getTokenCookie())) {
-            authenticateFromCookie().then((res) => {
-                setAuthChecked(true)
-            })
-        } else {
-            setAuthChecked(true)
-        }
-    }, [])
-
-    return <StrictMode>
-        {authChecked ?
-            <>
-                {isAuthenticated ? <AppNavbar /> : ''}
-                <RouterProvider router={router} />
-            </>
-            : 'Checking Auth'
-        }
-    </StrictMode>
+export function App() {
+    return (
+        <html>
+            <body>
+                <CountingComponent />
+            </body>
+        </html>
+    )
 }
