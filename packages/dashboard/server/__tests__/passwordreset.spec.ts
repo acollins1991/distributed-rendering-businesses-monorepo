@@ -29,7 +29,7 @@ describe('/passwordreset', () => {
             const json = await res.json()
 
             expect(res.status).toBe(200)
-            expect(json.message).toBe(`If an account exists for ${databaseUser.email} and email will be sent with a reset link`)
+            expect(json.message).toBe(`If an account exists for ${databaseUser.email} an email will be sent with a reset link`)
             const { data: resettoken } = await entity.scan.where(({ userEmail }, { eq }) => eq(userEmail, databaseUser.email)).go()
             expect(resettoken).toBeTruthy()
         })
@@ -48,7 +48,7 @@ describe('/passwordreset', () => {
 
             expect(res.status).toBe(200)
             const json = await res.json()
-            expect(json.message).toBe(`If an account exists for ${email} and email will be sent with a reset link`)
+            expect(json.message).toBe(`If an account exists for ${email} an email will be sent with a reset link`)
             const { data: [resettoken] } = await entity.scan.where(({ userEmail }, { eq }) => eq(userEmail, email)).go()
             expect(resettoken).toBeFalsy()
         })

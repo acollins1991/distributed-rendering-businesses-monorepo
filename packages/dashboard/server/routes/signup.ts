@@ -24,8 +24,7 @@ signup.post(
             last_name,
             email,
             password
-        }
-            = c.req.valid("json")
+        } = c.req.valid("json")
 
         const passwordStrength = getPasswordStrength(password)
 
@@ -64,7 +63,7 @@ signup.post(
                 token: session.id
             }, 200)
 
-        } catch (e) {
+        } catch (e: any) {
             return c.json(e, 400)
         }
     })

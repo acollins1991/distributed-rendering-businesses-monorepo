@@ -76,8 +76,6 @@ export default class ApiRequestFactory {
             this.config.headers['Cookie'] = `${tokenCookieName}=${this.cookie}`
         }
 
-        const request = app.request(this.endpoint, this.config)
-
         return app.request(this.endpoint, this.config)
     }
 }

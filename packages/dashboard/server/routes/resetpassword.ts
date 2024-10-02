@@ -34,7 +34,7 @@ resetpassword.post(
         }
 
         return c.json({
-            message: `If an account exists for ${email} and email will be sent with a reset link`
+            message: `If an account exists for ${email} an email will be sent with a reset link`
         }, 200)
     })
 

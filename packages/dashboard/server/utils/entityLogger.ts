@@ -25,6 +25,6 @@ function updateTracked(event: ElectroEvent) {
     trackedValues.totalCalls += 1
 }
 export default function entityLogger(event: ElectroEvent) {
-    updateTracked(event)
-    console.log(trackedValues)
+    // updateTracked(event)
+    // console.log(trackedValues)
 };

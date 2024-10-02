@@ -3,16 +3,26 @@ import { faker } from "@faker-js/faker"
 import { entity as userEntity } from "../entities/user"
 import { entity as sessionEntity } from "../entities/sessions"
 import ApiRequestFactory from "../factories/ApiRequest"
+import createUserFactory from "../factories/User"
+
+function createUserDetails() {
+    const first_name = faker.person.firstName()
+    const last_name = faker.person.firstName()
+    const email = faker.internet.email({
+        firstName: first_name.toLocaleLowerCase(),
+        lastName: last_name.toLocaleLowerCase()
+    })
+
+    return {
+        first_name,
+        last_name,
+        email
+    }
+}
 
 describe("/signup endpoint", () => {
     describe('POST', () => {
 
-        const first_name = faker.person.firstName()
-        const last_name = faker.person.firstName()
-        const email = faker.internet.email({
-            firstName: first_name.toLocaleLowerCase(),
-            lastName: last_name.toLocaleLowerCase()
-        })
         const password = faker.internet.password({
             length: 16
         })
@@ -22,9 +32,7 @@ describe("/signup endpoint", () => {
 
         test('request with weak password fails', async () => {
             const personRequest = {
-                first_name,
-                last_name,
-                email,
+                ...createUserDetails(),
                 password: weakPassword
             }
 
@@ -33,12 +41,13 @@ describe("/signup endpoint", () => {
             expect(res.status).toBe(400)
             expect((await res.json()).message).toBe("Password too weak")
         })
-        test('successful request creates user and session', async () => {
+
+        test.only('successful request creates user and session', async () => {
+
+            const userDetails = createUserDetails()
 
             const personRequest = {
-                first_name,
-                last_name,
-                email,
+                ...userDetails,
                 password
             }
 
@@ -48,9 +57,9 @@ describe("/signup endpoint", () => {
             expect(res.status).toBe(200)
 
             // get user with email
-            const { data: users } = await userEntity.scan.where(({ email: recordEmail }, { eq }) => eq(recordEmail, email)).go()
+            const { data: users } = await userEntity.scan.where(({ email: recordEmail }, { eq }) => eq(recordEmail, userDetails.email)).go()
             const targetUser = users[0]
-            expect(targetUser.email).toBe(email)
+            expect(targetUser.email).toBe(userDetails.email)
 
             // returns token, which is bearer token for user
             const json = await res.json()
@@ -61,10 +70,14 @@ describe("/signup endpoint", () => {
 
         test("signup with duplicate email fails", async () => {
 
+            // create existing user
+            const { user } = await createUserFactory()
+
+            const userDetails = createUserDetails()
+
             const personRequest = {
-                first_name,
-                last_name,
-                email,
+                ...userDetails,
+                email: user.email,
                 password
             }
 

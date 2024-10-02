@@ -25,7 +25,7 @@
     "bootstrap": "^5.3.3",
     "check-password-strength": "^2.0.10",
     "date-fns": "^3.6.0",
-    "electrodb": "^2.14.2",
+    "electrodb": "^2.15.0",
     "hono": "^4.5.2",
     "io-ts": "^2.2.21",
     "is-html": "^3.1.0",
