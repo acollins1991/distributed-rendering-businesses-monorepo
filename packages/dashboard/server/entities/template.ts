@@ -4,6 +4,7 @@ import defaultTemplateContent from "../../utils/defaultTemplateContent";
 import isHtml from "is-html"
 import type { Editor, ProjectData } from "grapesjs";
 import type { z } from "zod";
+import entityLogger from "../utils/entityLogger";
 
 const schema = createSchema({
     model: {
@@ -85,6 +86,6 @@ const schema = createSchema({
     }
 })
 
-export const entity = new Entity(schema, { table, client },)
+export const entity = new Entity(schema, { table, client, logger: entityLogger },)
 
 export type Template = EntityItem<typeof entity>

@@ -1,5 +1,6 @@
 import { Entity, createSchema } from "electrodb";
 import { client, table } from "../db/index"
+import entityLogger from "../utils/entityLogger";
 
 const schema = createSchema({
     model: {
@@ -54,4 +55,4 @@ const schema = createSchema({
     }
 })
 
-export const entity = new Entity(schema, { table, client },)
+export const entity = new Entity(schema, { table, client, logger: entityLogger },)

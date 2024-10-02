@@ -56,7 +56,6 @@ describe("/signup endpoint", () => {
             const json = await res.json()
             const { data: sessions } = await sessionEntity.scan.go()
             const targetSession = sessions.find(session => session.sessionId === json.token)
-            expect(sessions.find(session => session.sessionId === json.token)).toBeTruthy()
             expect(targetSession?.userId).toBe(targetUser.userId)
         })
 

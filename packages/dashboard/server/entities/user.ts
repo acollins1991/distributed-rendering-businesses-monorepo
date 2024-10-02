@@ -1,4 +1,5 @@
 import { Entity, createSchema, type EntityItem } from "electrodb";
+import entityLogger from "../utils/entityLogger"
 import { table, client } from "../db";
 
 function isValidEmail(email: string): boolean {
@@ -88,6 +89,9 @@ const schema = createSchema({
     }
 })
 
-export const entity = new Entity(schema, { table, client })
+export const entity = new Entity(
+    schema,
+    { table, client, logger: entityLogger }
+)
 
 export type User = EntityItem<typeof entity>

@@ -1,6 +1,7 @@
 import { Entity, createSchema, type EntityItem } from "electrodb";
 import { table, client } from "../db";
 import { generateIdFromEntropySize } from "lucia";
+import entityLogger from "../utils/entityLogger";
 
 const schema = createSchema({
     model: {
@@ -66,4 +67,4 @@ const schema = createSchema({
 
 export type Session = EntityItem<typeof entity>
 
-export const entity = new Entity(schema, { table, client })
+export const entity = new Entity(schema, { table, client, logger: entityLogger })

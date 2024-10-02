@@ -1,6 +1,6 @@
 import { Entity, createSchema, type EntityItem } from "electrodb";
 import { client, table } from "../db/index"
-import { z } from "zod";
+import entityLogger from "../utils/entityLogger";
 
 const schema = createSchema({
     model: {
@@ -60,6 +60,6 @@ const schema = createSchema({
     }
 })
 
-export const entity = new Entity(schema, { table, client },)
+export const entity = new Entity(schema, { table, client, logger: entityLogger },)
 
 export type Site = EntityItem<typeof entity>
