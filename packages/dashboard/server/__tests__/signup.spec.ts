@@ -4,6 +4,7 @@ import { entity as userEntity } from "../entities/user"
 import { entity as sessionEntity } from "../entities/sessions"
 import ApiRequestFactory from "../factories/ApiRequest"
 import createUserFactory from "../factories/User"
+import generator from 'generate-password'
 
 function createUserDetails() {
     const first_name = faker.person.firstName()
@@ -23,8 +24,11 @@ function createUserDetails() {
 describe("/signup endpoint", () => {
     describe('POST', () => {
 
-        const password = faker.internet.password({
-            length: 16
+        const password = generator.generate({
+            length: 16,
+            uppercase: true,
+            lowercase: true,
+            symbols: true
         })
         const weakPassword = faker.internet.password({
             length: 4

@@ -9,6 +9,7 @@
   "devDependencies": {
     "@faker-js/faker": "^8.4.1",
     "@types/bun": "latest",
+    "generate-password": "^1.7.1",
     "vitest-mock-extended": "^1.3.1"
   },
   "peerDependencies": {
@@ -16,6 +17,7 @@
   },
   "dependencies": {
     "@hono/zod-validator": "^0.2.1",
+    "@password-validator/core": "^1.3.8",
     "handlebars": "^4.7.8",
     "zip-a-folder": "^3.1.6"
   }

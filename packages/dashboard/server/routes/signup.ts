@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { password as bunPassword } from 'bun'
 import { auth } from '../auth'
 import { add } from 'date-fns'
-import getPasswordStrength from '../utils/getPasswordStrength'
+import validatePassword from '../utils/validatePassword'
 import { zValidator } from '@hono/zod-validator'
 
 const signup = new Hono()
@@ -26,12 +26,11 @@ signup.post(
             password
         } = c.req.valid("json")
 
-        const passwordStrength = getPasswordStrength(password)
+        const passwordStrength = validatePassword(password)
 
         // check password strength
-        if (passwordStrength.value === "Too weak") {
+        if (!passwordStrength.isValid) {
             return c.json({
-                // meta: passwordStrength(password),
                 message: 'Password too weak'
             }, 400)
         }

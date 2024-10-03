@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { entity as userEntity } from "../entities/user";
 import { entity as resetTokenEntity } from "../entities/resettoken";
-import getPasswordStrength from "../utils/getPasswordStrength";
+import validatePassword from "../utils/validatePassword";
 import { auth } from "../auth";
 import { zValidator } from '@hono/zod-validator'
 
@@ -52,8 +52,8 @@ resetpassword.patch(
         } = c.req.valid("json");
 
         // check password strength
-        const passwordStrength = getPasswordStrength(password)
-        if (passwordStrength.value === "Too weak") {
+        const passwordStrength = validatePassword(password)
+        if (!passwordStrength.isValid) {
             return c.json({
                 message: 'Password too weak'
             }, 400)
