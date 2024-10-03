@@ -8,6 +8,7 @@ import type { User } from "../entities/user"
 import { add } from "date-fns"
 import { auth } from "../auth"
 import ApiRequestFactory from "../factories/ApiRequest"
+import generator from 'generate-password'
 
 describe('/passwordreset', () => {
 
@@ -58,8 +59,11 @@ describe('/passwordreset', () => {
     describe("PATCH", () => {
 
         let resetToken: ResetToken
-        const newPassword = faker.internet.password({
-            length: 16
+        const newPassword = generator.generate({
+            length: 16,
+            uppercase: true,
+            lowercase: true,
+            symbols: true
         })
 
         beforeAll(async () => {

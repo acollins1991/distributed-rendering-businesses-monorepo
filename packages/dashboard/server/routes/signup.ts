@@ -29,7 +29,7 @@ signup.post(
         const passwordStrength = validatePassword(password)
 
         // check password strength
-        if (!passwordStrength.isValid) {
+        if (!passwordStrength.isValid()) {
             return c.json({
                 message: 'Password too weak'
             }, 400)

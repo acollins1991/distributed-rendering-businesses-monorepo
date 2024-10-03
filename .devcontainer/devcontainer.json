@@ -6,7 +6,8 @@
     "customizations": {
         "vscode": {
             "extensions": [
-                "HashiCorp.terraform"
+                "HashiCorp.terraform",
+                "Vue.volar"
             ]
         }
     }

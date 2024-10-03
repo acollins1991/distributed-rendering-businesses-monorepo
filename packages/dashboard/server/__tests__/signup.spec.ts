@@ -46,7 +46,7 @@ describe("/signup endpoint", () => {
             expect((await res.json()).message).toBe("Password too weak")
         })
 
-        test.only('successful request creates user and session', async () => {
+        test('successful request creates user and session', async () => {
 
             const userDetails = createUserDetails()
 

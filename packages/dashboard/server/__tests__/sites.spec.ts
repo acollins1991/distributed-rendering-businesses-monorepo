@@ -246,7 +246,7 @@ describe("/sites endpoints", () => {
 
         describe("POST", () => {
 
-            test.only('creates a new template record', async () => {
+            test('creates a new template record', async () => {
                 const templateName = 'Testing' + crypto.randomUUID()
 
                 const res = await new ApiRequestFactory(`/api/sites/${databaseSite.siteId}/templates`, {
@@ -279,13 +279,10 @@ describe("/sites endpoints", () => {
                     path
                 }).post.setAuthSession(bearerToken).go()
 
-                const json = await res.json()
                 expect(res.status).toBe(400)
-                const { data: [templateRecord] } = await templateEntity.scan.where(({ name }, { eq }) => eq(name, templateName)).go()
+                const { data: templates } = await templateEntity.scan.where(({ path: p }, { eq }) => eq(p, path)).go()
 
-                expect(res.status).toBe(200)
-                expect(json.name).toBe(templateName)
-                expect(templateRecord).toBeTruthy()
+                expect(templates.length).toEqual(1)
             })
 
         })

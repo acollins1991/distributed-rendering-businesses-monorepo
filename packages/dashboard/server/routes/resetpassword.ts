@@ -53,7 +53,7 @@ resetpassword.patch(
 
         // check password strength
         const passwordStrength = validatePassword(password)
-        if (!passwordStrength.isValid) {
+        if (!passwordStrength.isValid()) {
             return c.json({
                 message: 'Password too weak'
             }, 400)
