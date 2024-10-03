@@ -8,6 +8,7 @@ import ApiRequestFactory from "../../dashboard/server/factories/ApiRequest";
 import createUserFactory from "../../dashboard/server/factories/User";
 import defaultTemplateContent from "../../dashboard/utils/defaultTemplateContent";
 import { mock as mockType } from "vitest-mock-extended"
+import type { Session } from "../../dashboard/server/entities/sessions";
 
 // from https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/lambda-event-structure.html#lambda-event-structure-response
 const dummyEventObject = {
@@ -93,6 +94,7 @@ describe("cloudfront renderer function", () => {
 
     let site: Site
     let template: Template
+    let session: Awaited<ReturnType<typeof createUserFactory>>["session"]
 
     beforeAll(async () => {
 
@@ -108,7 +110,8 @@ describe("cloudfront renderer function", () => {
             }
         })
 
-        const { session } = await createUserFactory()
+        const { session: s } = await createUserFactory()
+        session = s
         const res = await new ApiRequestFactory('/api/sites', {
             name: 'Testing site'
         }).post.setAuthSession(session.id).go()
@@ -120,11 +123,63 @@ describe("cloudfront renderer function", () => {
         template = templateRecord as Template
     })
 
-    test("renders a page", async () => {
-
-        console.log(createEvent(site.domain, '/').Records[0].cf.request.headers["host"][0].value)
+    test("renders a page, based on path /", async () => {
 
         const res = await handler(createEvent(site.domain, '/'))
+
+        expect(res).toEqual({
+            status: '200',
+            statusDescription: 'OK',
+            headers: {
+                'cache-control': [{
+                    key: 'Cache-Control',
+                    value: 'max-age=100'
+                }],
+                'content-type': [{
+                    key: 'Content-Type',
+                    value: 'text/html'
+                }]
+            },
+            body: defaultTemplateContent.replace('{{ page_title }}', 'Page Title').replace('{{ page_content }}', 'Page Content'),
+        })
+    })
+
+    test("renders a page, based on path /about", async () => {
+
+        // create /about template
+        await new ApiRequestFactory(`/api/sites/${site.siteId}/templates`, {
+            name: "About Page",
+            path: '/about'
+        }).post.setAuthSession(session.id).go()
+
+        const res = await handler(createEvent(site.domain, '/about'))
+
+        expect(res).toEqual({
+            status: '200',
+            statusDescription: 'OK',
+            headers: {
+                'cache-control': [{
+                    key: 'Cache-Control',
+                    value: 'max-age=100'
+                }],
+                'content-type': [{
+                    key: 'Content-Type',
+                    value: 'text/html'
+                }]
+            },
+            body: defaultTemplateContent.replace('{{ page_title }}', 'Page Title').replace('{{ page_content }}', 'Page Content'),
+        })
+    })
+
+    test("renders a page, based on path /product/123 with wildcard path (/product/*)", async () => {
+
+        // create /product/* template
+        await new ApiRequestFactory(`/api/sites/${site.siteId}/templates`, { 
+            name: "Product 123",
+            path: '/product/*'
+        }).post.setAuthSession(session.id).go()
+
+        const res = await handler(createEvent(site.domain, '/product/123'))
 
         expect(res).toEqual({
             status: '200',

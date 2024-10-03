@@ -3,8 +3,14 @@ import { client, table } from "../db/index"
 import defaultTemplateContent from "../../utils/defaultTemplateContent";
 import isHtml from "is-html"
 import type { Editor, ProjectData } from "grapesjs";
-import type { z } from "zod";
+import { string, type z } from "zod";
 import entityLogger from "../utils/entityLogger";
+
+type Variable = {
+    label: string,
+    key: string,
+    value: string | number
+}
 
 const schema = createSchema({
     model: {
@@ -31,20 +37,29 @@ const schema = createSchema({
             type: 'string',
             required: true
         },
-        // content: {
-        //     type: 'string',
-        //     default: () => defaultTemplateContent,
-        //     validate: (value) => !isHtml(value)
-        // },
         content: {
-            type: CustomAttributeType<ProjectData>("any")
+            type: 'string',
+            default: () => defaultTemplateContent,
+            validate: (value) => !isHtml(value)
         },
         variables: {
-            type: 'any',
-            default: () => ({
-                page_title: 'Page Title',
-                page_content: 'Page Content'
-            }),
+            type: 'list',
+            items: {
+                type: CustomAttributeType<Variable>("any"),
+            },
+            default: () => (
+                [
+                    {
+                        label: 'Page Title',
+                        key: 'page_title',
+                        value: 'Page Title'
+                    },
+                    {
+                        label: 'Page Content',
+                        key: 'page_content',
+                        value: 'Page Content'
+                    }
+                ]),
         },
         created_at: {
             type: "number",

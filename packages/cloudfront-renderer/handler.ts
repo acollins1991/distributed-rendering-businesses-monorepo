@@ -9,11 +9,26 @@ async function getSiteRecordFromUrl(url: URL): Promise<Site> {
     return site
 }
 
-async function compileTemplateFromTemplateRecord(templateId: Template["templateId"]): Promise<string> {
-    const { data: template } = await templateEntity.get({ templateId }).go()
-    const handlebarsTemplate = Handlebars.compile(template?.content || '')
-    const compiledTemplate = handlebarsTemplate(template?.variables || {})
+async function compileTemplateFromTemplateRecord(template: Template) {
+    const handlebarsTemplate = Handlebars.compile(template.content || '')
+    const variables = template.variables?.reduce((accumulator: Record<string, any>, current) => {
+        accumulator[current.key] = current.value
+        return accumulator
+    }, {})
+    const compiledTemplate = handlebarsTemplate(variables || {})
     return compiledTemplate
+}
+
+async function getTemplateFromUrlPath(siteId: Site["siteId"], pathname: URL["pathname"]) {
+
+    // cannot currently filter inside query for regex check
+    const { data: templates } = await templateEntity.query.bySiteId({ siteId }).go()
+    const template = templates.find(t => {
+        const pathRegex = new RegExp(`^${t.path.replaceAll("*", '.*')}$`);
+        return Boolean(pathRegex.test(pathname))
+    })
+
+    return template
 }
 
 export const handler: CloudFrontResponseHandler = async (event) => {
@@ -28,9 +43,28 @@ export const handler: CloudFrontResponseHandler = async (event) => {
 
     // get relevant site record
     const site = await getSiteRecordFromUrl(url)
+    const targetTemplate = await getTemplateFromUrlPath(site.siteId, url.pathname)
+
+    if( !targetTemplate ) {
+        return {
+            status: '404',
+            statusDescription: 'OK',
+            headers: {
+                'cache-control': [{
+                    key: 'Cache-Control',
+                    value: 'max-age=100'
+                }],
+                'content-type': [{
+                    key: 'Content-Type',
+                    value: 'text/html'
+                }]
+            },
+            body: "Page not found",
+        } 
+    }
 
     // TODO: just use default template for now
-    const pageString = await compileTemplateFromTemplateRecord(site.default_template)
+    const pageString = await compileTemplateFromTemplateRecord(targetTemplate)
 
     return {
         status: '200',

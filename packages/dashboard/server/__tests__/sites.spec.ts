@@ -352,7 +352,7 @@ describe("/sites endpoints", () => {
 
                 const res = await new ApiRequestFactory(`/api/sites/${databaseSite.siteId}/templates/${templateRecord.templateId}`, {
                     name: newTemplateName,
-                    variables: {}
+                    path: '/'
                 }).patch.setAuthSession(bearerToken).go()
 
                 expect(res.status).toBe(200)

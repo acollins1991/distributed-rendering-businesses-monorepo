@@ -192,7 +192,7 @@ sites.post(
             if (val === '/') {
                 return true
             }
-            const urlPathRegex = /^\/?([a-zA-Z0-9\-._~:\/@]*)*\/?$/;
+            const urlPathRegex = /^\/?([a-zA-Z0-9\-._~:\/@*]*)*\/?$/;
             return urlPathRegex.test(val);
         }, {
             message: "Path must be a valid URL path string value",
@@ -260,8 +260,7 @@ sites.get(
 sites.patch(
     "/:siteId/templates/:templateId",
     zValidator("json", z.object({
-        name: z.string().optional(),
-        variables: z.record(z.string(), z.string())
+        name: z.string().optional()
     })),
     async (c) => {
         const { templateId } = c.get("template") as Template
