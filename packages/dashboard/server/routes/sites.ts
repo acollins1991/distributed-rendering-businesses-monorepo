@@ -8,6 +8,7 @@ import { createMiddleware } from 'hono/factory'
 import { entity as userEntity } from "../entities/user"
 import { entity as templateEntity, type Template } from "../entities/template"
 import { zValidator } from '@hono/zod-validator'
+import { SitesService } from '../entities/services/sites'
 // import { SitesService } from '../entities/services/sites'
 
 function protectSiteRecordMiddleware(failedMessage: string) {
@@ -201,6 +202,12 @@ sites.post(
     async (c) => {
         const site = c.get("site")
         const { name, path } = c.req.valid("json")
+
+        // check if template with this path already exists
+        const { data: [existingTemplate] } = await templateEntity.query.bySiteId({ siteId: site.siteId }).where(({ path: p },{ eq }) => eq(p, path) ).go()
+        if( existingTemplate ) {
+            return c.json({ message: `Template with path ${path} already exists` }, 400)
+        }
 
         try {
             const { data: template } = await templateEntity.create({

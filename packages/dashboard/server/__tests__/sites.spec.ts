@@ -11,6 +11,10 @@ import ApiRequestFactory from "../factories/ApiRequest"
 import defaultTemplateContent from "../../utils/defaultTemplateContent"
 import type { Distribution } from "@aws-sdk/client-cloudfront"
 
+function createRandomPath() {
+    return `/${faker.word.words(5).replaceAll(" ", "-")}`
+}
+
 describe("/sites endpoints", () => {
 
     let databaseUser: User;
@@ -242,16 +246,41 @@ describe("/sites endpoints", () => {
 
         describe("POST", () => {
 
-            test('creates a new template record', async () => {
+            test.only('creates a new template record', async () => {
                 const templateName = 'Testing' + crypto.randomUUID()
 
                 const res = await new ApiRequestFactory(`/api/sites/${databaseSite.siteId}/templates`, {
                     name: templateName,
-                    path: '/'
+                    path: createRandomPath()
+                }).post.setAuthSession(bearerToken).go()
+
+                expect(res.status).toBe(200)
+                const { data: [templateRecord] } = await templateEntity.scan.where(({ name }, { eq }) => eq(name, templateName)).go()
+
+                const json = await res.json()
+                expect(json.name).toBe(templateName)
+                expect(templateRecord).toBeTruthy()
+            })
+
+            test('new template records must have unique path values', async () => {
+
+                // store path so we can test duplication
+                const path = createRandomPath()
+
+                await new ApiRequestFactory(`/api/sites/${databaseSite.siteId}/templates`, {
+                    name: 'Testing' + crypto.randomUUID(),
+                    path
+                }).post.setAuthSession(bearerToken).go()
+
+                // duplicate
+                const templateName = 'Testing' + crypto.randomUUID()
+                const res = await new ApiRequestFactory(`/api/sites/${databaseSite.siteId}/templates`, {
+                    name: templateName,
+                    path
                 }).post.setAuthSession(bearerToken).go()
 
                 const json = await res.json()
-                expect(res.status).toBe(200)
+                expect(res.status).toBe(400)
                 const { data: [templateRecord] } = await templateEntity.scan.where(({ name }, { eq }) => eq(name, templateName)).go()
 
                 expect(res.status).toBe(200)
@@ -270,7 +299,7 @@ describe("/sites endpoints", () => {
                 const templateName = 'Testing' + crypto.randomUUID()
                 const templateRes = await new ApiRequestFactory(`/api/sites/${databaseSite.siteId}/templates`, {
                     name: templateName,
-                    path: '/'
+                    path: createRandomPath()
                 }).post.setAuthSession(bearerToken).go()
                 const template = await templateRes.json() as Template
 
@@ -317,7 +346,7 @@ describe("/sites endpoints", () => {
 
                 // create template to test agains
                 const { data: templateRecord } = await templateEntity.create(
-                    { name: `Template ${crypto.randomUUID()}`, siteId: databaseSite.siteId, path: '/' }
+                    { name: `Template ${crypto.randomUUID()}`, siteId: databaseSite.siteId, path: createRandomPath() }
                 ).go()
 
                 const res = await new ApiRequestFactory(`/api/sites/${databaseSite.siteId}/templates/${templateRecord.templateId}`).setAuthSession(bearerToken).go()
@@ -352,7 +381,7 @@ describe("/sites endpoints", () => {
 
                 const res = await new ApiRequestFactory(`/api/sites/${databaseSite.siteId}/templates/${templateRecord.templateId}`, {
                     name: newTemplateName,
-                    path: '/'
+                    path: createRandomPath()
                 }).patch.setAuthSession(bearerToken).go()
 
                 expect(res.status).toBe(200)
@@ -372,7 +401,7 @@ describe("/sites endpoints", () => {
             test("deletes template record", async () => {
                 // create template to test agains
                 const { data: templateRecord } = await templateEntity.create(
-                    { name: `Template ${crypto.randomUUID()}`, siteId: databaseSite.siteId, path: '/' }
+                    { name: `Template ${crypto.randomUUID()}`, siteId: databaseSite.siteId, path:  createRandomPath() }
                 ).go()
 
                 const res = await new ApiRequestFactory(`/api/sites/${databaseSite.siteId}/templates/${templateRecord.templateId}`).delete.setAuthSession(bearerToken).go()
