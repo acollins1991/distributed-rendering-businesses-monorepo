@@ -5,6 +5,8 @@ import signin from './routes/signin'
 import signout from './routes/signout'
 import resetpassword from './routes/resetpassword'
 import user from './routes/user'
+import templates from './routes/templates'
+import components from './routes/components'
 import { logger } from 'hono/logger'
 
 import authenticate from './routes/authenticate'
@@ -21,7 +23,11 @@ if (!isTest) {
 const app = new Hono()
     .route('/api',
         apiServer.route("/user", user)
-            .route("/sites", sites)
+            .route("/sites",
+                sites
+                    .route('/:siteId/templates', templates)
+                    .route('/:siteId/components', components)
+            )
             .route("/signup", signup)
             .route('/signin', signin)
             .route("/signout", signout)
