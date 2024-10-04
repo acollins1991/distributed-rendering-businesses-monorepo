@@ -79,7 +79,7 @@ export class DynamoDBAdapter implements Adapter {
         return convertSessionInterface(session)
     }
 
-    private async getUserFromSessionId(sessionId: string): Promise<DatabaseUser | null> {
+    async getUserFromSessionId(sessionId: string): Promise<DatabaseUser | null> {
 
         const session = await this.getSession(sessionId)
 

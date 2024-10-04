@@ -1,11 +1,8 @@
 import { Entity, createSchema, CustomAttributeType, type EntityItem } from "electrodb";
 import { client, table } from "../db/index"
-import defaultTemplateContent from "../../utils/defaultTemplateContent";
 import isHtml from "is-html"
-import type { Editor, ProjectData } from "grapesjs";
-import { string, type z } from "zod";
 import entityLogger from "../utils/entityLogger";
-import type { Component } from "./component";
+import type { Site } from "./site";
 
 type Variable = {
     label: string,
@@ -15,18 +12,18 @@ type Variable = {
 
 const schema = createSchema({
     model: {
-        entity: 'template',
+        entity: 'component',
         version: '1',
         service: 'sites',
     },
     attributes: {
-        templateId: {
+        componentId: {
             type: "string",
             default: () => crypto.randomUUID(),
             readOnly: true
         },
         siteId: {
-            type: "string",
+            type: CustomAttributeType<Site["siteId"]>("string"),
             required: true,
             readOnly: true
         },
@@ -34,14 +31,13 @@ const schema = createSchema({
             type: 'string',
             required: true
         },
-        path: {
-            type: 'string',
-            required: true
-        },
         content: {
             type: 'string',
-            default: () => defaultTemplateContent,
-            validate: (value) => !isHtml(value)
+            validate: (value) => {
+                if(!isHtml(value)) {
+                    return 'Component content is not valid HTML'
+                }
+            }
         },
         variables: {
             type: 'list',
@@ -51,22 +47,16 @@ const schema = createSchema({
             default: () => (
                 [
                     {
-                        label: 'Page Title',
-                        key: 'page_title',
-                        value: 'Page Title'
+                        label: 'Component Title',
+                        key: 'component_title',
+                        value: 'Component Title'
                     },
                     {
-                        label: 'Page Content',
-                        key: 'page_content',
-                        value: 'Page Content'
+                        label: 'Component Content',
+                        key: 'component_content',
+                        value: 'Component Content'
                     }
                 ]),
-        },
-        registered_components: {
-            type: 'list',
-            items: {
-                type: CustomAttributeType<Component["componentId"]>("string"),
-            }
         },
         created_at: {
             type: "number",
@@ -84,10 +74,10 @@ const schema = createSchema({
         },
     },
     indexes: {
-        template: {
+        component: {
             pk: {
                 field: "pk",
-                composite: ["templateId"],
+                composite: ["componentId"],
             },
             sk: {
                 field: "sk",
@@ -108,6 +98,10 @@ const schema = createSchema({
     }
 })
 
-export const entity = new Entity(schema, { table, client, logger: entityLogger },)
+export const entity = new Entity(schema, { table, client, logger: entityLogger })
 
-export type Template = EntityItem<typeof entity>
+export type Component = EntityItem<typeof entity>
+
+export async function createComponent(siteId: Site["siteId"], { name, content }: Pick<Component, 'name' | 'content'>) {
+    return entity.create({ siteId, name, content }).go()
+}

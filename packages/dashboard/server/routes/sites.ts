@@ -1,6 +1,5 @@
 import { Hono } from 'hono'
-import { z } from 'zod'
-import { friendlySitesDomainGenerator } from '../utils/friendlySitesDomainGenerator'
+import { z, ZodType } from 'zod'
 import { entity, type Site } from '../entities/site'
 import apiValidateAuthCookie from '../utils/apiValidateAuthCookie'
 import type { User } from 'lucia'
@@ -9,6 +8,7 @@ import { entity as userEntity } from "../entities/user"
 import { entity as templateEntity, type Template } from "../entities/template"
 import { zValidator } from '@hono/zod-validator'
 import { SitesService } from '../entities/services/sites'
+import { entity as componentEntity, createComponent, type Component } from '../entities/component'
 // import { SitesService } from '../entities/services/sites'
 
 function protectSiteRecordMiddleware(failedMessage: string) {
@@ -46,7 +46,8 @@ const sites = new Hono<{
     Variables: {
         site: Site,
         template: Template,
-        user: User
+        user: User,
+        component: Component
     }
 }>()
 
@@ -83,6 +84,7 @@ sites.post(
 
         try {
 
+            const { friendlySitesDomainGenerator } = await import('../utils/friendlySitesDomainGenerator')
             const domain = friendlySitesDomainGenerator()
 
             /**
@@ -204,8 +206,8 @@ sites.post(
         const { name, path } = c.req.valid("json")
 
         // check if template with this path already exists
-        const { data: [existingTemplate] } = await templateEntity.query.bySiteId({ siteId: site.siteId }).where(({ path: p },{ eq }) => eq(p, path) ).go()
-        if( existingTemplate ) {
+        const { data: [existingTemplate] } = await templateEntity.query.bySiteId({ siteId: site.siteId }).where(({ path: p }, { eq }) => eq(p, path)).go()
+        if (existingTemplate) {
             return c.json({ message: `Template with path ${path} already exists` }, 400)
         }
 
@@ -287,6 +289,92 @@ sites.delete(
         try {
             const { data: template } = await templateEntity.delete({ templateId }).go()
             return c.json(template, 200)
+        } catch (e: any) {
+            return c.json(e, 500)
+        }
+    })
+
+// components
+const componentPostValidation: ZodType<Parameters<typeof createComponent>[1]> = z.object({
+    name: z.string(),
+    content: z.string()
+})
+sites.post(
+    "/:siteId/components",
+    zValidator("json", componentPostValidation),
+    async (c) => {
+        const site = c.get("site")
+        const { name, content } = c.req.valid("json")
+
+        // check if if component with name already exists
+        const { data: [existingComponent] } = await componentEntity.query.bySiteId({ siteId: site.siteId }).go()
+        if (existingComponent) {
+            return c.json({ message: `Component with name ${name} already exists` }, 400)
+        }
+
+        try {
+            const { data: component } = await createComponent(site.siteId, { name, content })
+
+            return c.json(component, 200)
+        } catch (e: any) {
+            return c.json(e, 500)
+        }
+    })
+
+sites.get(
+    "/:siteId/components",
+    async (c) => {
+        const site = c.get("site")
+
+        const query = z.object({
+            cursor: z.string(),
+            perPage: z.number()
+        }).partial().parse(c.req.query())
+
+        const executionArgs = {
+            cursor: query.cursor ?? null,
+            limit: query.perPage ?? 10
+        }
+
+        try {
+            const { data: components, cursor } = await componentEntity.query.bySiteId({ siteId: site.siteId }).go(executionArgs)
+
+            return c.json({
+                data: components,
+                cursor: cursor,
+                links: {
+                    nextPage: `${c.req.path}?cursor=${cursor}`
+                }
+            }, 200)
+        } catch (e: any) {
+            return c.json(e, 500)
+        }
+    })
+
+const setComponentRecordMiddleware = createMiddleware(async (c, next) => {
+    const { siteId } = c.get("site")
+    const componentId = c.req.param('componentId') as string
+    const { data: [component] } = await componentEntity.query.bySiteId({ siteId }).where(({ componentId: id }, { eq }) => eq(id, componentId)).go()
+
+    if (!component) {
+        return c.json({
+            message: "Cannot find component"
+        }, 404)
+    }
+
+    c.set("component", component)
+
+    await next()
+})
+
+sites.use("/:siteId/components/:componentId", setComponentRecordMiddleware)
+
+sites.get(
+    "/:siteId/components/:componentId",
+    async (c) => {
+        try {
+            const component = c.get("component")
+            return c.json(component, 200)
         } catch (e: any) {
             return c.json(e, 500)
         }

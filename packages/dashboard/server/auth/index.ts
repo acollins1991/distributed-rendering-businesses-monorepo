@@ -1,7 +1,6 @@
 import { Lucia } from "lucia";
 import { DynamoDBAdapter } from "./adapter";
 import type { User } from "../entities/user";
-import type { Session } from "../entities/sessions";
 
 type UserWithoutPassword = Omit<User, 'password_hash'>
 
