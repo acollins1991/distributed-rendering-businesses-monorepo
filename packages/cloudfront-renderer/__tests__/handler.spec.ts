@@ -3,12 +3,14 @@ import type { CloudFrontRequestEvent } from 'aws-lambda';
 import type { Distribution } from "@aws-sdk/client-cloudfront"
 import handler from "../handler"
 import { type Site } from "../../dashboard/server/entities/site";
-import { entity as templateEntity, type Template } from "../../dashboard/server/entities/template";
+import { createTemplate, entity as templateEntity, updateTemplate, type Template } from "../../dashboard/server/entities/template";
 import ApiRequestFactory from "../../dashboard/server/factories/ApiRequest";
 import createUserFactory from "../../dashboard/server/factories/User";
 import defaultTemplateContent from "../../dashboard/utils/defaultTemplateContent";
 import { mock as mockType } from "vitest-mock-extended"
 import type { Session } from "../../dashboard/server/entities/sessions";
+import { faker } from "@faker-js/faker";
+import { createComponent } from "../../dashboard/server/entities/component";
 
 // from https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/lambda-event-structure.html#lambda-event-structure-response
 const dummyEventObject = {
@@ -174,7 +176,7 @@ describe("cloudfront renderer function", () => {
     test("renders a page, based on path /product/123 with wildcard path (/product/*)", async () => {
 
         // create /product/* template
-        await new ApiRequestFactory(`/api/sites/${site.siteId}/templates`, { 
+        await new ApiRequestFactory(`/api/sites/${site.siteId}/templates`, {
             name: "Product 123",
             path: '/product/*'
         }).post.setAuthSession(session.id).go()
@@ -195,6 +197,45 @@ describe("cloudfront renderer function", () => {
                 }]
             },
             body: defaultTemplateContent.replace('{{ page_title }}', 'Page Title').replace('{{ page_content }}', 'Page Content'),
+        })
+    })
+
+    test("renders a page which indlues a component", async () => {
+        // create template
+        const pathname = `/${faker.internet.domainWord()}-${faker.internet.domainWord()}`
+        const { data: template } = await createTemplate(site.siteId, {
+            name: `Component ${faker.word.words(4)}`,
+            path: pathname,
+        })
+
+        // create component
+        const { data: component } = await createComponent(site.siteId, {
+            name: `Component ${faker.word.words(4)}`,
+            content: '<div>I am a component</div>'
+        })
+
+        // update template with new component
+        await updateTemplate(template.templateId, {
+            content: `<div>Component: {{> component__${component.componentId} }}</div>`,
+            registered_components: [component.componentId]
+        })
+
+        const res = await handler(createEvent(site.domain, pathname))
+
+        expect(res).toEqual({
+            status: '200',
+            statusDescription: 'OK',
+            headers: {
+                'cache-control': [{
+                    key: 'Cache-Control',
+                    value: 'max-age=100'
+                }],
+                'content-type': [{
+                    key: 'Content-Type',
+                    value: 'text/html'
+                }]
+            },
+            body: `<div>Component: ${component.content}</div>`,
         })
     })
 })

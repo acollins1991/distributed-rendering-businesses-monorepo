@@ -194,6 +194,27 @@ describe("/sites/:id/templates endpoints", () => {
 
         })
 
+        test("content updates must check if a component is used within the content", async () => {
+
+            // create component and template to test against
+            const { data: component } = await createComponent(databaseSite.siteId, { name: `Component ${faker.word.words(4)}`, content: "<div></div>" })
+            const { data: templateRecord } = await templateEntity.create(
+                {
+                    name: `Template ${crypto.randomUUID()}`, siteId: databaseSite.siteId, path: '/',
+                    // register component but do not add to content
+                    registered_components: [component.componentId]
+                }
+            ).go()
+
+            const res = await new ApiRequestFactory(`/api/sites/${databaseSite.siteId}/templates/${templateRecord.templateId}`, {
+                content: "<div>no components here</div>"
+            }).patch.setAuthSession(bearerToken).go()
+
+            console.log(await res.text())
+
+            expect(res.status).toBe(400)
+        })
+
     })
 
     describe("DELETE", () => {

@@ -31,7 +31,8 @@ signup.post(
         // check password strength
         if (!passwordStrength.isValid()) {
             return c.json({
-                message: 'Password too weak'
+                message: 'Password too weak',
+                meta: passwordStrength.getMessages()
             }, 400)
         }
 

@@ -105,3 +105,7 @@ export type Component = EntityItem<typeof entity>
 export async function createComponent(siteId: Site["siteId"], { name, content }: Pick<Component, 'name' | 'content'>) {
     return entity.create({ siteId, name, content }).go()
 }
+
+export async function getComponents(componentIds: Component["componentId"][]) {
+    return entity.get(componentIds.map(componentId => ({ componentId }))).go()
+}

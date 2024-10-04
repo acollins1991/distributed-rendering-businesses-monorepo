@@ -2,6 +2,7 @@ import type { CloudFrontResponseHandler } from 'aws-lambda';
 import { entity as siteEntity, type Site } from '../dashboard/server/entities/site';
 import { entity as templateEntity, type Template } from '../dashboard/server/entities/template';
 import Handlebars from 'handlebars';
+import { getComponents } from '../dashboard/server/entities/component';
 
 async function getSiteRecordFromUrl(url: URL): Promise<Site> {
     // TODO: must find another way of doing this
@@ -9,8 +10,25 @@ async function getSiteRecordFromUrl(url: URL): Promise<Site> {
     return site
 }
 
+async function registerComponentPartials(componentIds: NonNullable<Template["registered_components"]>, hb: typeof Handlebars) {
+    const { data: components } = await getComponents(componentIds)
+    components.forEach((component) => {
+        if( !component.content ) {
+            return
+        }
+        hb.registerPartial(`component__${component.componentId}`, component.content)
+    })
+
+}
+
 async function compileTemplateFromTemplateRecord(template: Template) {
-    const handlebarsTemplate = Handlebars.compile(template.content || '')
+    const hb = Handlebars
+    const handlebarsTemplate = hb.compile(template.content || '')
+
+    if(template.registered_components && template.registered_components.length) {
+        await registerComponentPartials(template.registered_components, hb)
+    }
+
     const variables = template.variables?.reduce((accumulator: Record<string, any>, current) => {
         accumulator[current.key] = current.value
         return accumulator

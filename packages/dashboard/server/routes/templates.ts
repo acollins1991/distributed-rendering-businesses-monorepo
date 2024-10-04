@@ -1,8 +1,8 @@
 import { Hono } from 'hono'
-import { z } from 'zod'
+import { z, ZodType } from 'zod'
 import { type Site } from '../entities/site'
 import type { User } from 'lucia'
-import { entity as templateEntity, type Template } from "../entities/template"
+import { entity as templateEntity, updateTemplate, type Template } from "../entities/template"
 import { zValidator } from '@hono/zod-validator'
 import { createMiddleware } from 'hono/factory'
 
@@ -116,17 +116,23 @@ templates.post(
         }
     })
 
+const templatePatchSchema: ZodType<Parameters<typeof updateTemplate>[1]> = z.object({
+    name: z.string(),
+    content: z.string()
+}).partial()
 templates.patch(
     "/:templateId",
-    zValidator("json", z.object({
-        name: z.string().optional()
-    })),
+    zValidator("json", templatePatchSchema),
     async (c) => {
-        const { templateId } = c.get("template") as Template
+        const { templateId } = c.get("template")
         const patchObject = c.req.valid("json")
         try {
-            const { data: template } = await templateEntity.patch({ templateId }).set(patchObject).go({ response: "all_new" })
-            return c.json(template, 200)
+            const updateRes = await updateTemplate(templateId, patchObject)
+            if (Array.isArray(updateRes)) {
+                return c.json(updateRes, 400)
+            } else {
+                return c.json(updateRes.data, 200)
+            }
         } catch (e: any) {
             return c.json(e, 500)
         }
@@ -135,7 +141,7 @@ templates.patch(
 templates.delete(
     "/:templateId",
     async (c) => {
-        const { templateId } = c.get("template") as Template
+        const { templateId } = c.get("template")
         try {
             const { data: template } = await templateEntity.delete({ templateId }).go()
             return c.json(template, 200)
