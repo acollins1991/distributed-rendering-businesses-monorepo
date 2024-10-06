@@ -2,7 +2,7 @@ import { test, describe, expect, beforeAll } from "bun:test"
 import { type Site } from "../entities/site"
 import createUserFactory from "../factories/User"
 import type { Session } from "lucia"
-import { entity as componentEntity, createComponent, type Component } from "../entities/component"
+import { entity as componentEntity, createComponent, getComponent, type Component } from "../entities/component"
 import { faker } from "@faker-js/faker"
 import ApiRequestFactory from "../factories/ApiRequest"
 
@@ -156,6 +156,59 @@ describe("/sites/:siteId/components endpoints", () => {
             const componentRes = await res.json() as Component
 
             expect(componentRes.componentId).toBe(component.componentId)
+        })
+
+        test("non existent components return 404", async () => {
+
+            const res = await new ApiRequestFactory(`/api/sites/${databaseSite.siteId}/components/doesnotexist`).get.setAuthSession(bearerToken).go()
+
+            expect(res.status).toBe(404)
+        })
+
+    })
+
+    describe("DELETE", () => {
+
+        test("deletes a specific component", async () => {
+
+            const componentData: Parameters<typeof createComponent>[1] = {
+                name: faker.word.words(4),
+                content: '<div>Testing testing testing</div>'
+            }
+
+            const { data: component } = await createComponent(databaseSite.siteId, componentData)
+
+            const res = await new ApiRequestFactory(`/api/sites/${databaseSite.siteId}/components/${component.componentId}`).delete.setAuthSession(bearerToken).go()
+            expect(res.status).toBe(200)
+
+            const { data } = await getComponent(component.componentId)
+            expect(data).toBeFalsy()
+
+        })
+
+    })
+
+    describe("PATCH", () => {
+
+        test("updates a specific component", async () => {
+
+            const componentData: Parameters<typeof createComponent>[1] = {
+                name: faker.word.words(4),
+                content: '<div>Testing testing testing</div>'
+            }
+            const { data: component } = await createComponent(databaseSite.siteId, componentData)
+
+            const updateDetails = {
+                name: `${faker.word.words(4)}`,
+                content: "<div>New Content</div>"
+            }
+            const res = await new ApiRequestFactory(`/api/sites/${databaseSite.siteId}/components/${component.componentId}`, updateDetails).patch.setAuthSession(bearerToken).go()
+            expect(res.status).toBe(200)
+
+            const componentRes = await res.json() as Component
+            expect(componentRes.name).toBe(updateDetails.name)
+            expect(componentRes.content).toBe(updateDetails.content)
+
         })
 
     })

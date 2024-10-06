@@ -106,6 +106,18 @@ export async function createComponent(siteId: Site["siteId"], { name, content }:
     return entity.create({ siteId, name, content }).go()
 }
 
+export async function getComponent(componentId: Component["componentId"]) {
+    return entity.get({ componentId }).go()
+}
+
 export async function getComponents(componentIds: Component["componentId"][]) {
     return entity.get(componentIds.map(componentId => ({ componentId }))).go()
+}
+
+export async function deleteComponent(componentId: Component["componentId"]) {
+    return entity.delete({ componentId }).go()
+}
+
+export async function updateComponent(componentId: Component["componentId"], updateDetails: Partial<Pick<Component, "name" | "content" | "variables">>) {
+    return entity.patch({ componentId }).set(updateDetails).go({ response: "all_new" })
 }

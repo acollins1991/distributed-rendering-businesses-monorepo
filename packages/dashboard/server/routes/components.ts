@@ -5,7 +5,7 @@ import type { User } from 'lucia'
 import { createMiddleware } from 'hono/factory'
 import { type Template } from "../entities/template"
 import { zValidator } from '@hono/zod-validator'
-import { entity as componentEntity, createComponent, type Component } from '../entities/component'
+import { entity as componentEntity, createComponent, deleteComponent, updateComponent, type Component } from '../entities/component'
 
 const components = new Hono<{
     Variables: {
@@ -100,7 +100,40 @@ components.get(
         } catch (e: any) {
             return c.json(e, 500)
         }
-    })
+    }
+)
+
+components.delete(
+    "/:componentId",
+    async (c) => {
+        try {
+            const component = c.get("component")
+            const { data } = await deleteComponent(component.componentId)
+            return c.json(data, 200)
+        } catch (e: any) {
+            return c.json(e, 500)
+        }
+    }
+)
+
+const componentPatchSchema: ZodType<Parameters<typeof updateComponent>[1]> = z.object({
+    name: z.string(),
+    content: z.string()
+}).partial()
+components.patch(
+    "/:componentId",
+    zValidator("json",componentPatchSchema),
+    async (c) => {
+        try {
+            const { componentId } = c.get("component")
+            const updateDetails = c.req.valid("json")
+            const { data } = await updateComponent(componentId, updateDetails)
+            return c.json(data, 200)
+        } catch (e: any) {
+            return c.json(e, 500)
+        }
+    }
+)
 
 
 export default components

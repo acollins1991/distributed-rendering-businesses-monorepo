@@ -2,8 +2,6 @@ import { Entity, createSchema, CustomAttributeType, type EntityItem } from "elec
 import { client, table } from "../db/index"
 import defaultTemplateContent from "../../utils/defaultTemplateContent";
 import isHtml from "is-html"
-import type { Editor, ProjectData } from "grapesjs";
-import { string, type z } from "zod";
 import entityLogger from "../utils/entityLogger";
 import type { Component } from "./component";
 import type { Site } from "./site";
