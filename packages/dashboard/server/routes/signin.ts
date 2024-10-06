@@ -1,4 +1,4 @@
-import { Context, Hono } from "hono";
+import { type Context, Hono } from "hono";
 import { z } from "zod";
 import { auth } from "../auth";
 import { entity } from "../entities/user";
@@ -52,7 +52,7 @@ signin.post(
                 token: session.id
             }, 200)
 
-        } catch (e) {
+        } catch (e: any) {
             return c.json(e, 500)
         }
     })
