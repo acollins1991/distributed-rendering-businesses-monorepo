@@ -6,6 +6,7 @@ import { auth } from '../auth'
 import { add } from 'date-fns'
 import validatePassword from '../utils/validatePassword'
 import { zValidator } from '@hono/zod-validator'
+import setAuthCookie from '../utils/setAuthCookie'
 
 const signup = new Hono()
 
@@ -59,8 +60,10 @@ signup.post(
                 }).getTime()
             });
 
+            setAuthCookie(c, session)
+
             return c.json({
-                token: session.id
+                token: session.id,
             }, 200)
 
         } catch (e: any) {

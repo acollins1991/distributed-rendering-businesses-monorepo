@@ -1,8 +1,6 @@
-import type { HonoRequest } from "hono";
 import { app } from "../honoApp";
 import { tokenCookieName } from "../utils/apiValidateAuthCookie";
 import createUserFactory from "./User";
-import { setCookie } from "hono/cookie";
 
 export default class ApiRequestFactory {
 
