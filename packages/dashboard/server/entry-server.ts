@@ -4,10 +4,21 @@ import { app } from "./honoApp";
 
 await ensureTableExists()
 
+async function resHandler(req: Request) {
+    const res = await app.fetch(req)
+    // need to add these here as they are not being added by Hono, even using the cors middleware
+    res.headers.set('Access-Control-Allow-Origin', '*');
+    res.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    return res
+}
+
 const serverOptions: Serve<unknown> = {
     port: 3000,
     fetch(req, server) {
-        return app.fetch(req, { ip: server.requestIP(req) })
+        return resHandler(req)
+    //  const res = await app.fetch(req, { ip: server.requestIP(req) })
+    //     res.headers.set('Access-Control-Allow-Origin', '*');
+    // res.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     }
 }
 
