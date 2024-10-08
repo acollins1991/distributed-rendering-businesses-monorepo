@@ -1,7 +1,7 @@
 import type { Context } from 'hono'
 import { setCookie } from 'hono/cookie'
-import { tokenCookieName } from './apiValidateAuthCookie'
 import type validateAuthCookie from './validateAuthCookie'
+import { tokenCookieName } from './authCookieName'
 
 export default function setAuthCookie(c: Context, session: NonNullable<
     Awaited<

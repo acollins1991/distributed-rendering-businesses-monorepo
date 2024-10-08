@@ -1,9 +1,7 @@
 import { Hono } from "hono";
 import validateBearerToken from "../utils/validateAuthCookie";
 import { getCookie } from "hono/cookie";
-import { tokenCookieName } from "../utils/apiValidateAuthCookie";
-
-tokenCookieName
+import { tokenCookieName } from "../utils/authCookieName";
 
 const authenticate = new Hono()
 

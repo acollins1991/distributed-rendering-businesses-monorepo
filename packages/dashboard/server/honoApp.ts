@@ -15,6 +15,10 @@ import authenticate from './routes/authenticate'
 // required for rpc client
 const app = new Hono()
     .basePath('/api')
+    .use(cors({
+        origin: ["http://localhost:8080/"],
+        credentials: true
+    }))
     .route("/user", user)
     .route("/sites",
         sites
@@ -30,7 +34,7 @@ const app = new Hono()
 if( process.env.NODE_ENV === 'test' ) {
     app.use(logger())
 }
-app.use(cors())
+app.use(logger())
 
 export type AppType = typeof app
 

@@ -1,5 +1,5 @@
 import { app } from "../honoApp";
-import { tokenCookieName } from "../utils/apiValidateAuthCookie";
+import { tokenCookieName } from "../utils/authCookieName";
 import createUserFactory from "./User";
 
 export default class ApiRequestFactory {

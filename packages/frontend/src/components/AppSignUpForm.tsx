@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type FormEventHandler } from 'react'
 import { client } from '../utils/useApi'
 import FormInput from './FormInput'
 import { useUserStore } from '../stores/user'
@@ -6,10 +6,10 @@ import { useUserStore } from '../stores/user'
 export default function AppSignUpForm() {
 
     const [isBusy, setIsBusy] = useState(false)
-    const [isValid, setIsValid] = useState()
     const setUser = useUserStore((state) => state.setUser)
 
-    async function formHandler(event: Event) {
+    const formHandler: FormEventHandler<HTMLFormElement> = async (event) => {
+
         event.preventDefault()
 
         setIsBusy(true)
@@ -26,7 +26,7 @@ export default function AppSignUpForm() {
                 json: details
             })
             console.log(document.cookie)
-            await setUser(res.token)
+            setUser(res.token)
             // console.log(user)
         } catch (e) {
             console.log(e)
