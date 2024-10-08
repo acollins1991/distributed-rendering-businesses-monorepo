@@ -2,8 +2,9 @@ import { useEffect, useState, type FormEventHandler } from 'react'
 import { client } from '../utils/useApi'
 import FormInput from './FormInput'
 import { useUserStore } from '../stores/user'
+import { useNavigate } from 'react-router-dom'
 
-export default function AppSignUpForm() {
+export default function AppSignUpForm({ signInButtonHandler }: { signInButtonHandler: Function }) {
 
     const [isBusy, setIsBusy] = useState(false)
     const setUser = useUserStore((state) => state.setUser)
@@ -21,11 +22,9 @@ export default function AppSignUpForm() {
         }, {})
 
         try {
-            console.log(document.cookie)
             const res = await client.api.signup.$post({
                 json: details
             })
-            console.log(document.cookie)
             setUser(res.token)
             // console.log(user)
         } catch (e) {
@@ -37,8 +36,12 @@ export default function AppSignUpForm() {
 
     return (
         <>
-            <form onSubmit={formHandler} className='bg-white shadow-md p-3'>
-                <h1 className='mb-3'>Sign Up</h1>
+            <form onSubmit={formHandler}>
+                <div className=" mb-3 items-center flex justify-center text-white h-24 rounded-md bg-slate-800">
+                    <h3 className="text-2xl">
+                        Sign Up
+                    </h3>
+                </div>
                 <div className='mb-3'>
                     <div className='mb-2'>
                         <FormInput name="first_name" label="First Name" type="text" required />
@@ -52,8 +55,17 @@ export default function AppSignUpForm() {
                     <FormInput name="password" label="Password" type="password" required={true} />
                 </div>
 
-                <button className={`rounded-none bg-indigo-500 text-white py-2 px-3 ${isBusy ?? 'disabled'}`} type='submit' disabled={isBusy}>Login</button>
+                <button type='submit' disabled={isBusy} className="w-full rounded-md bg-slate-800 py-2 px-4 border border-transparent text-center text-sm text-white transition-all shadow-md hover:shadow-lg focus:bg-slate-700 focus:shadow-none active:bg-slate-700 hover:bg-slate-700 active:shadow-none disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none">
+                    Sign Up
+                </button>
             </form>
+
+            <div className="p-6 pt-0">
+                <p className="flex justify-center mt-6 text-sm text-slate-600">
+                    <button onClick={signInButtonHandler} className="ml-1 text-sm font-semibold text-slate-700 underline">Sign In</button>
+                </p>
+            </div>
+
         </>
     )
 }

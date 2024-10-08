@@ -8,10 +8,11 @@ export default function Login() {
 
     const [signingUp, setSigninUp] = useState(false)
     const isAuthenticated = useUserStore(state => state.isAuthenticated)
+    const user = useUserStore(state => state.user)
     const navigate = useNavigate()
 
     useEffect(() => {
-        if( isAuthenticated ) {
+        if (isAuthenticated) {
             navigate('/')
         }
     }, [isAuthenticated])
@@ -20,12 +21,16 @@ export default function Login() {
         setSigninUp(true)
     }
 
-    return <div className="w-full h-full">
+    function signInButtonHandler() {
+        setSigninUp(false)
+    }
 
-        {signingUp ? <AppSignUpForm /> : <AppLoginForm />}
-
-        <div>
-            <button onClick={signUpButtonHandler}>Sign Up</button>
+    return <div className="w-screen h-screen flex justify-center items-center">
+        <div className="flex flex-col bg-white shadow-sm border border-slate-200 w-96 rounded-lg">
+            <div className="p-3">
+                {signingUp ? <AppSignUpForm signInButtonHandler={signInButtonHandler} /> : <AppLoginForm signUpButtonHandler={signUpButtonHandler} />}
+            </div>
         </div>
+
     </div>
 }

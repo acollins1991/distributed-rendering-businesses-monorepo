@@ -8,9 +8,10 @@ type UserStore = {
     user: User | null,
     isAuthenticated: boolean,
     isLoading: boolean,
-    setUser: (token: string) => void,
+    setUser: (token: string) => Promise<void>,
     setIsLoading: (value: boolean) => void,
-    token: string | null
+    token: string | null,
+    signOut: () => Promise<void>
 }
 
 export const useUserStore = create<UserStore>()((set) => ({
@@ -28,5 +29,11 @@ export const useUserStore = create<UserStore>()((set) => ({
     },
     setIsLoading(value) {
         set({ isLoading: value })
+    },
+    async signOut() {
+        set({ isLoading: true })
+        await client.api.signout.$post()
+        Cookies.remove(tokenCookieName)
+        set({ isLoading: false, isAuthenticated: false, token: null, user: null })
     }
 }))

@@ -21,7 +21,6 @@ export default function AddNewSiteForm() {
             const res = await client.api.sites.$post({
                 json: details
             })
-            console.log(res)
         } catch (e) {
             console.log(e)
         } finally {

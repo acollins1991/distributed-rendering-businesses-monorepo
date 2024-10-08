@@ -16,18 +16,7 @@ import Home from './views/Home.tsx';
 import { useUserStore } from './stores/user.ts';
 import AppLoadingPage from './components/AppLoadingPage.tsx';
 import AddNewSite from './views/AddNewSite.tsx';
-
-
-const ProtectedRoutes = () => {
-
-  const isAuthenticated = useUserStore((state) => state.isAuthenticated)
-
-  if(!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  } else {
-    return <Outlet />;
-  }
-}
+import AuthenticatedLayout from './layouts/AuthenticatedLayout.tsx';
 
 const SplashPage = ({ children }: { children: JSX.Element }) => {
 
@@ -46,8 +35,7 @@ const SplashPage = ({ children }: { children: JSX.Element }) => {
       }
     }, 1250)
     setIsLoading(false)
-    console.log(isLoading)
-  }, [token])
+  }, [isAuthenticated])
 
 
   return <>
@@ -61,7 +49,7 @@ createRoot(document.getElementById('root')!).render(
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/" element={<ProtectedRoutes />}>
+          <Route path="/" element={<AuthenticatedLayout />}>
               <Route path="/" element={<Home />} />
               <Route path="/add-new-site" element={<AddNewSite />} />
             </Route>

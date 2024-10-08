@@ -1,13 +1,17 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type FormEventHandler } from 'react'
 import { client } from '../utils/useApi'
 import FormInput from './FormInput'
+import { useUserStore } from '../stores/user'
+import { useNavigate } from 'react-router-dom'
 
-export default function AppLoginForm() {
+export default function AppLoginForm({ signUpButtonHandler }: { signUpButtonHandler: Function }) {
 
     const [isBusy, setIsBusy] = useState(false)
-    const [isValid, setIsValid] = useState()
 
-    async function formHandler(event: Event) {
+    const formHandler: FormEventHandler<HTMLFormElement> = async (event: Event) => {
+
+        console.log('testingdsoifjsadfoiaj')
+
         event.preventDefault()
 
         setIsBusy(true)
@@ -22,18 +26,29 @@ export default function AppLoginForm() {
             const res = await client.api.signin.$post({
                 json: details
             })
-            console.log(res)
-        } catch(e) {
+        } catch (e) {
             console.log(e)
         } finally {
             setIsBusy(false)
         }
     }
 
+    const isAuthenticated = useUserStore((state) => state.isAuthenticated)
+    const navigate = useNavigate()
+    useEffect(() => {
+        if( isAuthenticated ) {
+            navigate('/')
+        }
+    }, [isAuthenticated])
+
     return (
         <>
-            <form onSubmit={formHandler} className='bg-white shadow-md p-3'>
-                <h1 className='mb-3'>Sign In</h1>
+            <form onSubmit={formHandler}>
+                <div className="mb-3 items-center flex justify-center text-white h-24 rounded-md bg-slate-800">
+                    <h3 className="text-2xl">
+                        Sign In
+                    </h3>
+                </div>
                 <div className='mb-3'>
                     <div className='mb-2'>
                         <FormInput name="email" label="Email" type="email" required />
@@ -41,8 +56,16 @@ export default function AppLoginForm() {
                     <FormInput name="password" label="Password" type="password" required={true} />
                 </div>
 
-                <button className={`rounded-none bg-indigo-500 text-white py-2 px-3 ${isBusy ?? 'disabled'}`} type='submit' disabled={isBusy}>Login</button>
+                <button type='submit' disabled={isBusy} className="w-full rounded-md bg-slate-800 py-2 px-4 border border-transparent text-center text-sm text-white transition-all shadow-md hover:shadow-lg focus:bg-slate-700 focus:shadow-none active:bg-slate-700 hover:bg-slate-700 active:shadow-none disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none">
+                    Login
+                </button>
             </form>
+
+            <div className="p-6 pt-0">
+                <p className="flex justify-center mt-6 text-sm text-slate-600">
+                    Don't have an account? <button onClick={signUpButtonHandler} className="ml-1 text-sm font-semibold text-slate-700 underline">Create an account</button>
+                </p>
+            </div>
         </>
     )
 }
