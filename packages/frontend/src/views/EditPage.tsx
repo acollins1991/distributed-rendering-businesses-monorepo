@@ -6,6 +6,17 @@ import { client } from '../utils/useApi';
 import type { Template } from '../../../dashboard/server/entities/template';
 import type { Component } from '../../../dashboard/server/entities/component';
 
+function createDefaultHomepage(editor: Editor) {
+  const pages = editor.Pages;
+  const newPage = pages.add({
+    path: '/',
+    id: 'new-page-id',
+    styles: '.my-class { color: red }',
+    component: '<div class="my-class">My element</div>',
+  });
+  return newPage
+}
+
 function DefaultEditor() {
 
   const { siteId } = useParams()
@@ -39,11 +50,25 @@ function DefaultEditor() {
             remote: {
               urlLoad: editorEndpoint,
               urlStore: editorEndpoint,
-              onLoad: result => {
+              onLoad: (result, editor) => {
+                // if (!result.pages) {
+                //   const homepage = createDefaultHomepage(editor)
+                //   if (homepage) {
+                //     editor.Pages.select(homepage)
+                //   }
+                // }
                 return result
               }
             }
           }
+        },
+        // this creates by default the homepage with path /
+        pageManager: {
+          pages: [
+            {
+              path: '/',
+            }
+          ]
         }
       }}
       onEditor={onEditor}
