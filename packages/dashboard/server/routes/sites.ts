@@ -87,28 +87,10 @@ sites.post(
             const { friendlySitesDomainGenerator } = await import('../utils/friendlySitesDomainGenerator')
             const domain = friendlySitesDomainGenerator()
 
-            /**
-             * TODO: Should be a better way of doing this, currently using 3 db calls
-             * We are creating the site record with an empty string as the default_template value as a palceholder,
-             * then we create a template, 
-             * then we patch the site record with the new template id
-             * 
-             * Potentially we can generate the site ID manually so that we only make two db calls (possibly a transact write)
-             */
-
-            const { data: { siteId } } = await entity.create({
+            const { data: site } = await entity.create({
                 name,
                 domain,
-                // placeholder value
-                default_template: ''
             }).go()
-
-            const { data: template } = await templateEntity.create({ siteId, name: "Default", path: '/' }).go()
-
-            // add template
-            const { data: site } = await entity.patch({ siteId }).set({
-                default_template: template.templateId
-            }).go({ response: "all_new" })
 
             // add new site id to the user record as ownership signal
             const user = c.get("user")

@@ -53,7 +53,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/" element={<AuthenticatedLayout />}>
               <Route path="/" element={<Home />} />
               <Route path="/add-new-site" element={<AddNewSite />} />
-              <Route path="/sites/:siteId/:templateId" element={<EditPage />} />
+              <Route path="/sites/:siteId/edit" element={<EditPage />} />
             </Route>
         </Routes>
       </BrowserRouter>

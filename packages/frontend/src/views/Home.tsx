@@ -10,7 +10,7 @@ function SiteCard({ site }: { site: Site }) {
 
     const urlString = `https://${site.domain}/`
 
-    return <Link to={`/sites/${site.siteId}/${site.default_template}`} className='bg-white shadow-md p-3 aspect-square flex flex-col'>
+    return <Link to={`/sites/${site.siteId}/edit`} className='bg-white shadow-md p-3 aspect-square flex flex-col'>
         <div className="m-2.5 overflow-hidden text-white rounded-md">
             <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&amp;ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&amp;auto=format&amp;fit=crop&amp;w=1471&amp;q=80" alt="card-image" />
         </div>

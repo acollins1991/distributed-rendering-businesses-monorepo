@@ -11,6 +11,7 @@ import { logger } from 'hono/logger'
 import { cors } from "hono/cors"
 
 import authenticate from './routes/authenticate'
+import editor from './routes/editor'
 
 // required for rpc client
 const app = new Hono()
@@ -19,11 +20,11 @@ const app = new Hono()
         origin: ["http://localhost:8080/"],
         credentials: true
     }))
+    .use(logger())
     .route("/user", user)
     .route("/sites",
         sites
-            .route('/:siteId/templates', templates)
-            .route('/:siteId/components', components)
+            .route('/:siteId/editor', editor)
     )
     .route("/signup", signup)
     .route('/signin', signin)
@@ -31,10 +32,10 @@ const app = new Hono()
     .route("/passwordreset", resetpassword)
     .route("/authenticate", authenticate)
 
-if( process.env.NODE_ENV === 'test' ) {
-    app.use(logger())
-}
-app.use(logger())
+// if( process.env.NODE_ENV === 'test' ) {
+//     app.use(logger())
+// }
+// app.use(logger())
 
 export type AppType = typeof app
 

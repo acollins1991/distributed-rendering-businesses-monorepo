@@ -1,6 +1,7 @@
-import { Entity, createSchema, type EntityItem } from "electrodb";
+import { CustomAttributeType, Entity, createSchema, type EntityItem } from "electrodb";
 import { client, table } from "../db/index"
 import entityLogger from "../utils/entityLogger";
+import grapesjs, { type Editor, type ProjectData } from 'grapesjs';
 
 const schema = createSchema({
     model: {
@@ -27,9 +28,8 @@ const schema = createSchema({
             type: 'string',
             required: true,
         },
-        default_template: {
-            type: 'string',
-            required: true
+        grapejs_project_data: {
+            type: CustomAttributeType<ProjectData>("any")
         },
         created_at: {
             type: "number",
@@ -63,3 +63,7 @@ const schema = createSchema({
 export const entity = new Entity(schema, { table, client, logger: entityLogger },)
 
 export type Site = EntityItem<typeof entity>
+
+export async function updateGrapeJsProjectData(siteId: Site["siteId"], grapejs_project_data: ProjectData) {
+    return entity.patch({ siteId }).set({ grapejs_project_data }).go({ response: "updated_new" })
+}

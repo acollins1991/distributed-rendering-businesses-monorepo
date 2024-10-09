@@ -5,7 +5,6 @@ import { app } from "./honoApp";
 await ensureTableExists()
 
 async function resHandler(req: Request) {
-
     const res = await app.fetch(req)
 
     // need to add these here as they are not being added by Hono, even using the cors middleware
