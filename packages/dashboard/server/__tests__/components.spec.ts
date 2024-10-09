@@ -167,6 +167,39 @@ describe("/sites/:siteId/components endpoints", () => {
 
     })
 
+    describe("GET multiple specific components", () => {
+
+        test('passing the ids parameter will get the specified components', async () => {
+
+            // create a new site to test against
+            const siteRes = await new ApiRequestFactory(`/api/sites`, {
+                name: faker.word.words(4),
+            }).post.setAuthSession(bearerToken).go()
+            const site = await siteRes.json()
+
+            // create 5 template records
+            const components  = await Promise.all([...Array(5).keys()].map(async _ => {
+                const { data: c } = await createComponent(site.siteId, { name: `Component ${crypto.randomUUID()}`, content: '<div></div>' })
+                return c
+            }))
+
+            const componentsToGet = [components[0].componentId,components[1].componentId]
+
+            // create url with component ids added to search params
+            const url = new URL(`http://localhost/api/sites/${site.siteId}/components/specific`)
+            componentsToGet.forEach((id) => url.searchParams.append('ids', id))
+
+            const componentsRes = await new ApiRequestFactory(`${url.pathname}${url.search}`).get.setAuthSession(bearerToken).go()
+            expect(componentsRes.status).toBe(200)
+
+            const c = await componentsRes.json() as Component[]
+            c.forEach(component => {
+                expect(componentsToGet).toContain(component.componentId)
+            })
+        })
+
+    })
+
     describe("DELETE", () => {
 
         test("deletes a specific component", async () => {

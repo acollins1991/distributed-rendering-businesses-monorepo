@@ -5,7 +5,7 @@ import type { User } from 'lucia'
 import { createMiddleware } from 'hono/factory'
 import { type Template } from "../entities/template"
 import { zValidator } from '@hono/zod-validator'
-import { entity as componentEntity, createComponent, deleteComponent, updateComponent, type Component } from '../entities/component'
+import { entity as componentEntity, createComponent, deleteComponent, getComponents, updateComponent, type Component } from '../entities/component'
 
 const components = new Hono<{
     Variables: {
@@ -22,7 +22,7 @@ const componentPostValidation: ZodType<Parameters<typeof createComponent>[1]> = 
     content: z.string()
 })
 components.post(
-    "",
+    "/",
     zValidator("json", componentPostValidation),
     async (c) => {
         const site = c.get("site")
@@ -44,7 +44,7 @@ components.post(
     })
 
 components.get(
-    "",
+    "/",
     async (c) => {
         const site = c.get("site")
 
@@ -68,6 +68,23 @@ components.get(
                     nextPage: `${c.req.path}?cursor=${cursor}`
                 }
             }, 200)
+        } catch (e: any) {
+            return c.json(e, 500)
+        }
+    })
+
+components.get(
+    "/specific",
+    zValidator("query", z.object({
+        ids: z.array(z.string())
+    })),
+    async (c) => {
+        const { ids } = c.req.valid("query")
+
+        try {
+            const { data: components } = await getComponents(ids)
+
+            return c.json(components, 200)
         } catch (e: any) {
             return c.json(e, 500)
         }
@@ -122,7 +139,7 @@ const componentPatchSchema: ZodType<Parameters<typeof updateComponent>[1]> = z.o
 }).partial()
 components.patch(
     "/:componentId",
-    zValidator("json",componentPatchSchema),
+    zValidator("json", componentPatchSchema),
     async (c) => {
         try {
             const { componentId } = c.get("component")

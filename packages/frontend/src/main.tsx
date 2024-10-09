@@ -17,6 +17,7 @@ import { useUserStore } from './stores/user.ts';
 import AppLoadingPage from './components/AppLoadingPage.tsx';
 import AddNewSite from './views/AddNewSite.tsx';
 import AuthenticatedLayout from './layouts/AuthenticatedLayout.tsx';
+import EditPage from './views/EditPage.tsx';
 
 const SplashPage = ({ children }: { children: JSX.Element }) => {
 
@@ -52,6 +53,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/" element={<AuthenticatedLayout />}>
               <Route path="/" element={<Home />} />
               <Route path="/add-new-site" element={<AddNewSite />} />
+              <Route path="/sites/:siteId/:templateId" element={<EditPage />} />
             </Route>
         </Routes>
       </BrowserRouter>
