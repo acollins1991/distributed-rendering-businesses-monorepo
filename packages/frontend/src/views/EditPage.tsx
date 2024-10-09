@@ -4,9 +4,13 @@ import { useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { client } from '../utils/useApi';
 import type { Template } from '../../../dashboard/server/entities/template';
+import type { Component } from '../../../dashboard/server/entities/component';
 
-function DefaultEditor() {
+function DefaultEditor({ template, components }: { template: Template, components: Component[] }) {
   const onEditor = (editor: Editor) => {
+    if (template.content) {
+      editor.addComponents(template.content)
+    }
     console.log('Editor loaded', { editor });
   };
 
@@ -30,20 +34,42 @@ function DefaultEditor() {
 
 export default function EditPage() {
 
-    const { siteId, templateId } = useParams()
-    const [template, setTemplate] = useState()
+  const { siteId, templateId } = useParams()
+  const [template, setTemplate] = useState<Template>()
+  const [components, setComponents] = useState<Component[]>()
+  const [isLoading, setIsLoading] = useState(true)
 
-    useEffect(() => {
-        client.api.sites[":siteId"].templates[":templateId"].$get({
-            param: {
-                siteId,
-                templateId
-            }
-        }).then(async res => {
-            const templateRes = await res.json() as Template
-            // if( templateRes.registered_components ) 
-        })
-    }, [])
+  async function getTemplateAndComponents() {
 
-    return <DefaultEditor />
+    const res = await client.api.sites[":siteId"].templates[":templateId"].$get({
+      param: {
+        siteId,
+        templateId
+      }
+    })
+    const templateRes = await res.json() as Template
+    setTemplate(templateRes)
+
+    if (templateRes.registered_components && templateRes.registered_components.length) {
+      client.api.sites[":siteId"].components.specific.$get({
+        query: {
+          ids: templateRes.registered_components
+        }
+      }).then(async res => {
+        const componentsRes = await res.json() as Component[]
+        setComponents(componentsRes)
+      })
+    }
+  }
+
+  useEffect(() => {
+    getTemplateAndComponents().then(() => setIsLoading(false))
+  }, [])
+
+  if (isLoading) {
+    return 'Loading'
+  } else if (template) {
+    console.log(template)
+    return <DefaultEditor template={template} components={components ?? []} />
+  }
 }
