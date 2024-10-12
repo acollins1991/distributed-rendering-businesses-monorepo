@@ -1,5 +1,5 @@
 import { format } from "date-fns"
 
-export default function formatTimestamp(timestamp: number) {
-    return format(new Date(timestamp), 'MMMM d, y')
+export default function formatTimestamp(timestamp: number, includeTime = false) {
+    return format(new Date(timestamp), `${includeTime ? "p, " : ""}MMM d, y`)
 }   

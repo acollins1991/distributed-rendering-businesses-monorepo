@@ -10,7 +10,8 @@
     "@faker-js/faker": "^8.4.1",
     "@types/bun": "latest",
     "generate-password": "^1.7.1",
-    "vitest-mock-extended": "^1.3.1"
+    "vitest-mock-extended": "^1.3.1",
+    "@aws-sdk/client-cloudfront": "^3.583.0"
   },
   "peerDependencies": {
     "typescript": "^5.4.5"

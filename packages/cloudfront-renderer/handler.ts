@@ -1,8 +1,7 @@
 import type { CloudFrontResponseHandler } from 'aws-lambda';
 import { entity as siteEntity, type Site } from '../dashboard/server/entities/site';
-import { entity as templateEntity, type Template } from '../dashboard/server/entities/template';
-import Handlebars from 'handlebars';
-import { getComponents } from '../dashboard/server/entities/component';
+import grapesjs, { Page, Pages, type Editor, type ProjectData } from 'grapesjs';
+import minifyHtml from "@minify-html/node";
 
 async function getSiteRecordFromUrl(url: URL): Promise<Site> {
     // TODO: must find another way of doing this
@@ -10,43 +9,31 @@ async function getSiteRecordFromUrl(url: URL): Promise<Site> {
     return site
 }
 
-async function registerComponentPartials(componentIds: NonNullable<Template["registered_components"]>, hb: typeof Handlebars) {
-    const { data: components } = await getComponents(componentIds)
-    components.forEach((component) => {
-        if( !component.content ) {
-            return
-        }
-        hb.registerPartial(`component__${component.componentId}`, component.content)
-    })
-
-}
-
-async function compileTemplateFromTemplateRecord(template: Template) {
-    const hb = Handlebars
-    const handlebarsTemplate = hb.compile(template.content || '')
-
-    if(template.registered_components && template.registered_components.length) {
-        await registerComponentPartials(template.registered_components, hb)
-    }
-
-    const variables = template.variables?.reduce((accumulator: Record<string, any>, current) => {
-        accumulator[current.key] = current.value
-        return accumulator
-    }, {})
-    const compiledTemplate = handlebarsTemplate(variables || {})
-    return compiledTemplate
-}
-
-async function getTemplateFromUrlPath(siteId: Site["siteId"], pathname: URL["pathname"]) {
-
-    // cannot currently filter inside query for regex check
-    const { data: templates } = await templateEntity.query.bySiteId({ siteId }).go()
-    const template = templates.find(t => {
-        const pathRegex = new RegExp(`^${t.path.replaceAll("*", '.*')}$`);
+function getPageFromUrlPath(pages: (Page & { attributes: { path: string } })[], pathname: URL["pathname"]) {
+    const page = pages.find((p) => {
+        const pathRegex = new RegExp(`^${p.attributes.path.replaceAll("*", '.*')}$`);
+        console.log(p.attributes.path, pathname)
         return Boolean(pathRegex.test(pathname))
     })
 
-    return template
+    return page
+}
+
+async function compilePage(site: Site, pathname: URL["pathname"]) {
+    if (!site.grapejs_project_data) {
+        throw new Error(`There was an issue getting the page data for site ${site.siteId}`)
+    }
+    const editor = grapesjs.init({ headless: true })
+    editor.loadProjectData(site.grapejs_project_data.data)
+    const pages = editor.Pages
+    const targetPage = getPageFromUrlPath(pages.getAll(), pathname) as Page
+    pages.select(targetPage)
+
+    return {
+        html: editor.getHtml(),
+        css: editor.getCss(),
+        js: editor.getJs()
+    }
 }
 
 export const handler: CloudFrontResponseHandler = async (event) => {
@@ -61,9 +48,8 @@ export const handler: CloudFrontResponseHandler = async (event) => {
 
     // get relevant site record
     const site = await getSiteRecordFromUrl(url)
-    const targetTemplate = await getTemplateFromUrlPath(site.siteId, url.pathname)
 
-    if( !targetTemplate ) {
+    if (!site) {
         return {
             status: '404',
             statusDescription: 'OK',
@@ -78,11 +64,11 @@ export const handler: CloudFrontResponseHandler = async (event) => {
                 }]
             },
             body: "Page not found",
-        } 
+        }
     }
 
     // TODO: just use default template for now
-    const pageString = await compileTemplateFromTemplateRecord(targetTemplate)
+    const { html, css, js } = await compilePage(site, url.pathname)
 
     return {
         status: '200',
@@ -97,7 +83,16 @@ export const handler: CloudFrontResponseHandler = async (event) => {
                 value: 'text/html'
             }]
         },
-        body: pageString,
+        body: minifyHtml.minify(Buffer.from(`
+            <!DOCTYPE html>
+            <html>
+                <head>
+                    ${css ?? `<style>${css}</style>`}
+                    ${js ?? `<script defer>${js}</script>`}
+                </head>
+                ${html}
+            </html>
+        `), { do_not_minify_doctype: true, keep_closing_tags: true }).toString(),
     }
 };
 

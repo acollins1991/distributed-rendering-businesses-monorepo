@@ -1,16 +1,10 @@
 import { Hono } from 'hono'
-import { z, ZodType } from 'zod'
 import { updateGrapeJsProjectData, type Site } from '../entities/site'
 import type { User } from 'lucia'
-import { createMiddleware } from 'hono/factory'
-import { type Template } from "../entities/template"
-import { zValidator } from '@hono/zod-validator'
-import { entity as componentEntity, createComponent, deleteComponent, getComponents, updateComponent, type Component } from '../entities/component'
 
 const editor = new Hono<{
     Variables: {
         site: Site,
-        template: Template,
         user: User
     }
 }>()

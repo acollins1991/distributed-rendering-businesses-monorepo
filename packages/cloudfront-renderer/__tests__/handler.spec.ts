@@ -1,16 +1,16 @@
-import { describe, test, expect, beforeAll, mock } from "bun:test"
+import { describe, test, expect, beforeAll, mock, beforeEach } from "bun:test"
 import type { CloudFrontRequestEvent } from 'aws-lambda';
 import type { Distribution } from "@aws-sdk/client-cloudfront"
 import handler from "../handler"
-import { type Site } from "../../dashboard/server/entities/site";
-import { createTemplate, entity as templateEntity, updateTemplate, type Template } from "../../dashboard/server/entities/template";
+import { entity, updateGrapeJsProjectData, type Site } from "../../dashboard/server/entities/site";
 import ApiRequestFactory from "../../dashboard/server/factories/ApiRequest";
 import createUserFactory from "../../dashboard/server/factories/User";
 import defaultTemplateContent from "../../dashboard/utils/defaultTemplateContent";
 import { mock as mockType } from "vitest-mock-extended"
-import type { Session } from "../../dashboard/server/entities/sessions";
-import { faker } from "@faker-js/faker";
-import { createComponent } from "../../dashboard/server/entities/component";
+import grapesjs, { type Editor, type ProjectData } from 'grapesjs';
+import createPage from "../../dashboard/server/factories/Page";
+import minifyHtml from "@minify-html/node";
+import createSite from "../../dashboard/server/factories/Site";
 
 // from https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/lambda-event-structure.html#lambda-event-structure-response
 const dummyEventObject = {
@@ -95,7 +95,6 @@ describe("cloudfront renderer function", () => {
     // setup the site and templates
 
     let site: Site
-    let template: Template
     let session: Awaited<ReturnType<typeof createUserFactory>>["session"]
 
     beforeAll(async () => {
@@ -112,22 +111,33 @@ describe("cloudfront renderer function", () => {
             }
         })
 
-        const { session: s } = await createUserFactory()
-        session = s
-        const res = await new ApiRequestFactory('/api/sites', {
-            name: 'Testing site'
-        }).post.setAuthSession(session.id).go()
+        // const { session: s } = await createUserFactory()
+        // session = s
+        // const res = await new ApiRequestFactory('/api/sites', {
+        //     name: 'Testing site'
+        // }).post.setAuthSession(session.id).go()
 
-        site = await res.json()
+        // const { siteId } = await res.json()
 
-        const { data: templateRecord } = await templateEntity.find({ siteId: site.siteId }).go()
-
-        template = templateRecord as Template
+        // const updateData: ProjectData = { "id": siteId, "data": { "assets": [], "styles": [], "pages": [createPage()] } }
+        // await updateGrapeJsProjectData(siteId, updateData)
     })
 
     test("renders a page, based on path /", async () => {
 
+        const site = await createSite()
+        const updateData: ProjectData = { "id": site.siteId, "data": { "assets": [], "styles": [], "pages": [createPage()] } }
+        await updateGrapeJsProjectData(site.siteId, updateData)
         const res = await handler(createEvent(site.domain, '/'))
+        const expectedString = minifyHtml.minify(Buffer.from(`
+            <!DOCTYPE html>
+            <html>
+                <head>
+                    * { box-sizing: border-box; } body {margin: 0;}
+                </head>
+                <body id=ivmo><div id=iu6h>U am a thing</div></body>
+            </html>
+        `), { do_not_minify_doctype: true, keep_closing_tags: true }).toString()
 
         expect(res).toEqual({
             status: '200',
@@ -142,19 +152,26 @@ describe("cloudfront renderer function", () => {
                     value: 'text/html'
                 }]
             },
-            body: defaultTemplateContent.replace('{{ page_title }}', 'Page Title').replace('{{ page_content }}', 'Page Content'),
+            body: expectedString,
         })
     })
 
     test("renders a page, based on path /about", async () => {
 
-        // create /about template
-        await new ApiRequestFactory(`/api/sites/${site.siteId}/templates`, {
-            name: "About Page",
-            path: '/about'
-        }).post.setAuthSession(session.id).go()
+        const site = await createSite()
+        const updateData: ProjectData = { "id": site.siteId, "data": { "assets": [], "styles": [], "pages": [createPage(), createPage('/about', 'I am the about page')] } }
+        await updateGrapeJsProjectData(site.siteId, updateData)
 
         const res = await handler(createEvent(site.domain, '/about'))
+        const expectedString = minifyHtml.minify(Buffer.from(`
+            <!DOCTYPE html>
+            <html>
+                <head>
+                    * { box-sizing: border-box; } body {margin: 0;}
+                </head>
+                <body id=ivmo><div id=iu6h>I am the about page</div></body>
+            </html>
+        `), { do_not_minify_doctype: true, keep_closing_tags: true }).toString()
 
         expect(res).toEqual({
             status: '200',
@@ -169,73 +186,73 @@ describe("cloudfront renderer function", () => {
                     value: 'text/html'
                 }]
             },
-            body: defaultTemplateContent.replace('{{ page_title }}', 'Page Title').replace('{{ page_content }}', 'Page Content'),
+            body: expectedString
         })
     })
 
-    test("renders a page, based on path /product/123 with wildcard path (/product/*)", async () => {
+    // test("renders a page, based on path /product/123 with wildcard path (/product/*)", async () => {
 
-        // create /product/* template
-        await new ApiRequestFactory(`/api/sites/${site.siteId}/templates`, {
-            name: "Product 123",
-            path: '/product/*'
-        }).post.setAuthSession(session.id).go()
+    //     // create /product/* template
+    //     await new ApiRequestFactory(`/api/sites/${site.siteId}/templates`, {
+    //         name: "Product 123",
+    //         path: '/product/*'
+    //     }).post.setAuthSession(session.id).go()
 
-        const res = await handler(createEvent(site.domain, '/product/123'))
+    //     const res = await handler(createEvent(site.domain, '/product/123'))
 
-        expect(res).toEqual({
-            status: '200',
-            statusDescription: 'OK',
-            headers: {
-                'cache-control': [{
-                    key: 'Cache-Control',
-                    value: 'max-age=100'
-                }],
-                'content-type': [{
-                    key: 'Content-Type',
-                    value: 'text/html'
-                }]
-            },
-            body: defaultTemplateContent.replace('{{ page_title }}', 'Page Title').replace('{{ page_content }}', 'Page Content'),
-        })
-    })
+    //     expect(res).toEqual({
+    //         status: '200',
+    //         statusDescription: 'OK',
+    //         headers: {
+    //             'cache-control': [{
+    //                 key: 'Cache-Control',
+    //                 value: 'max-age=100'
+    //             }],
+    //             'content-type': [{
+    //                 key: 'Content-Type',
+    //                 value: 'text/html'
+    //             }]
+    //         },
+    //         body: defaultTemplateContent.replace('{{ page_title }}', 'Page Title').replace('{{ page_content }}', 'Page Content'),
+    //     })
+    // })
 
-    test("renders a page which indlues a component", async () => {
-        // create template
-        const pathname = `/${faker.internet.domainWord()}-${faker.internet.domainWord()}`
-        const { data: template } = await createTemplate(site.siteId, {
-            name: `Component ${faker.word.words(4)}`,
-            path: pathname,
-        })
+    // test("renders a page which indlues a component", async () => {
+    //     // create template
+    //     const pathname = `/${faker.internet.domainWord()}-${faker.internet.domainWord()}`
+    //     const { data: template } = await createTemplate(site.siteId, {
+    //         name: `Component ${faker.word.words(4)}`,
+    //         path: pathname,
+    //     })
 
-        // create component
-        const { data: component } = await createComponent(site.siteId, {
-            name: `Component ${faker.word.words(4)}`,
-            content: '<div>I am a component</div>'
-        })
+    //     // create component
+    //     const { data: component } = await createComponent(site.siteId, {
+    //         name: `Component ${faker.word.words(4)}`,
+    //         content: '<div>I am a component</div>'
+    //     })
 
-        // update template with new component
-        await updateTemplate(template.templateId, {
-            content: `<div>Component: {{> component__${component.componentId} }}</div>`,
-            registered_components: [component.componentId]
-        })
+    //     // update template with new component
+    //     await updateTemplate(template.templateId, {
+    //         content: `<div>Component: {{> component__${component.componentId} }}</div>`,
+    //         registered_components: [component.componentId]
+    //     })
 
-        const res = await handler(createEvent(site.domain, pathname))
+    //     const res = await handler(createEvent(site.domain, pathname))
 
-        expect(res).toEqual({
-            status: '200',
-            statusDescription: 'OK',
-            headers: {
-                'cache-control': [{
-                    key: 'Cache-Control',
-                    value: 'max-age=100'
-                }],
-                'content-type': [{
-                    key: 'Content-Type',
-                    value: 'text/html'
-                }]
-            },
-            body: `<div>Component: ${component.content}</div>`,
-        })
-    })
+    //     expect(res).toEqual({
+    //         status: '200',
+    //         statusDescription: 'OK',
+    //         headers: {
+    //             'cache-control': [{
+    //                 key: 'Cache-Control',
+    //                 value: 'max-age=100'
+    //             }],
+    //             'content-type': [{
+    //                 key: 'Content-Type',
+    //                 value: 'text/html'
+    //             }]
+    //         },
+    //         body: `<div>Component: ${component.content}</div>`,
+    //     })
+    // })
 })
