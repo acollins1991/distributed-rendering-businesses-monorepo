@@ -130,7 +130,7 @@ describe("cloudfront renderer function", () => {
         expect(res?.body).toContain("I am the about page")
     })
 
-    test("renders a page, based on path /product/123 with wildcard path (/product/:id)", async () => {
+    test("renders a page, based on path /product/123 with url paramters (/product/:id)", async () => {
 
         // create /product/* template
         const site = await createSite()
