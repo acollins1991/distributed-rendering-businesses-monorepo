@@ -41,6 +41,6 @@ export default function createPage(path = "/", text = "U am a thing") {
             }
         ],
         "path": path,
-        "id": "okWYsjkQQuOw8byg"
+        "id": crypto.randomUUID()
     }
 }

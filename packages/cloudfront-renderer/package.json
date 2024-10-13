@@ -7,6 +7,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-cloudfront": "^3.583.0",
-    "@minify-html/node": "^0.15.0"
+    "@minify-html/node": "^0.15.0",
+    "path-to-regexp": "^8.2.0"
   }
 }

@@ -2,6 +2,7 @@ import type { CloudFrontResponseHandler } from 'aws-lambda';
 import { entity as siteEntity, type Site } from '../dashboard/server/entities/site';
 import grapesjs, { Page, Pages, type Editor, type ProjectData } from 'grapesjs';
 import minifyHtml from "@minify-html/node";
+import { match } from "path-to-regexp"
 
 async function getSiteRecordFromUrl(url: URL): Promise<Site> {
     // TODO: must find another way of doing this
@@ -11,9 +12,10 @@ async function getSiteRecordFromUrl(url: URL): Promise<Site> {
 
 function getPageFromUrlPath(pages: (Page & { attributes: { path: string } })[], pathname: URL["pathname"]) {
     const page = pages.find((p) => {
-        const pathRegex = new RegExp(`^${p.attributes.path.replaceAll("*", '.*')}$`);
-        console.log(p.attributes.path, pathname)
-        return Boolean(pathRegex.test(pathname))
+        const routeMatcher = match(p.attributes.path)
+        const isMatch = routeMatcher(pathname)
+        console.log(p.attributes.path, pathname, isMatch)
+        return isMatch.valueOf()
     })
 
     return page
@@ -27,6 +29,11 @@ async function compilePage(site: Site, pathname: URL["pathname"]) {
     editor.loadProjectData(site.grapejs_project_data.data)
     const pages = editor.Pages
     const targetPage = getPageFromUrlPath(pages.getAll(), pathname) as Page
+    
+    if( !targetPage ) {
+        throw new Error(`Unable to find page with path matching ${pathname}`)
+    }
+
     pages.select(targetPage)
 
     return {
