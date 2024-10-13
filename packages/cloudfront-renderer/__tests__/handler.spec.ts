@@ -130,69 +130,16 @@ describe("cloudfront renderer function", () => {
         expect(res?.body).toContain("I am the about page")
     })
 
-    // test("renders a page, based on path /product/123 with wildcard path (/product/*)", async () => {
+    test("renders a page, based on path /product/123 with wildcard path (/product/:id)", async () => {
 
-    //     // create /product/* template
-    //     await new ApiRequestFactory(`/api/sites/${site.siteId}/templates`, {
-    //         name: "Product 123",
-    //         path: '/product/*'
-    //     }).post.setAuthSession(session.id).go()
+        // create /product/* template
+        const site = await createSite()
+        const updateData: ProjectData = { "id": site.siteId, "data": { "assets": [], "styles": [], "pages": [createPage(), createPage('/product/:id', 'I am the product page')] } }
+        await updateGrapeJsProjectData(site.siteId, updateData)
 
-    //     const res = await handler(createEvent(site.domain, '/product/123'))
+        const res = await handler(createEvent(site.domain, '/product/123'))
 
-    //     expect(res).toEqual({
-    //         status: '200',
-    //         statusDescription: 'OK',
-    //         headers: {
-    //             'cache-control': [{
-    //                 key: 'Cache-Control',
-    //                 value: 'max-age=100'
-    //             }],
-    //             'content-type': [{
-    //                 key: 'Content-Type',
-    //                 value: 'text/html'
-    //             }]
-    //         },
-    //         body: defaultTemplateContent.replace('{{ page_title }}', 'Page Title').replace('{{ page_content }}', 'Page Content'),
-    //     })
-    // })
-
-    // test("renders a page which indlues a component", async () => {
-    //     // create template
-    //     const pathname = `/${faker.internet.domainWord()}-${faker.internet.domainWord()}`
-    //     const { data: template } = await createTemplate(site.siteId, {
-    //         name: `Component ${faker.word.words(4)}`,
-    //         path: pathname,
-    //     })
-
-    //     // create component
-    //     const { data: component } = await createComponent(site.siteId, {
-    //         name: `Component ${faker.word.words(4)}`,
-    //         content: '<div>I am a component</div>'
-    //     })
-
-    //     // update template with new component
-    //     await updateTemplate(template.templateId, {
-    //         content: `<div>Component: {{> component__${component.componentId} }}</div>`,
-    //         registered_components: [component.componentId]
-    //     })
-
-    //     const res = await handler(createEvent(site.domain, pathname))
-
-    //     expect(res).toEqual({
-    //         status: '200',
-    //         statusDescription: 'OK',
-    //         headers: {
-    //             'cache-control': [{
-    //                 key: 'Cache-Control',
-    //                 value: 'max-age=100'
-    //             }],
-    //             'content-type': [{
-    //                 key: 'Content-Type',
-    //                 value: 'text/html'
-    //             }]
-    //         },
-    //         body: `<div>Component: ${component.content}</div>`,
-    //     })
-    // })
+        expect(res?.status).toBe("200")
+        expect(res?.body).toContain('I am the product page')
+    })
 })

@@ -14,8 +14,7 @@ function getPageFromUrlPath(pages: (Page & { attributes: { path: string } })[], 
     const page = pages.find((p) => {
         const routeMatcher = match(p.attributes.path)
         const isMatch = routeMatcher(pathname)
-        console.log(p.attributes.path, pathname, isMatch)
-        return isMatch.valueOf()
+        return isMatch
     })
 
     return page
