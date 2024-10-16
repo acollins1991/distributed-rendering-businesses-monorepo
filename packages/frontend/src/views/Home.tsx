@@ -3,7 +3,7 @@ import AddNewSiteCard from "../components/AddNewSiteCard";
 import { useUserStore } from "../stores/user";
 import { client } from "../utils/useApi";
 import { Link } from "react-router-dom";
-import type { Site } from "../../../dashboard/server/entities/site";
+import type { Site } from "../../../api/entities/site";
 import formatTimestamp from "../utils/formatTimestamp";
 
 type SiteDeletionTriggered = (promise: Promise<Site["siteId"]>) => Promise<void>

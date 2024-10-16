@@ -1,5 +1,5 @@
 import type { CloudFrontResponseHandler } from 'aws-lambda';
-import { entity as siteEntity, type Site } from '../dashboard/server/entities/site';
+import { entity as siteEntity, type Site } from '../api/entities/site';
 import grapesjs, { Page, Pages, type Editor, type ProjectData } from 'grapesjs';
 import minifyHtml from "@minify-html/node";
 import { match } from "path-to-regexp"

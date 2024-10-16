@@ -1,7 +1,7 @@
-import { client, table } from "../server/db"
+import { client, table } from "../db"
 import { CreateTableCommand, ListTablesCommand, BatchWriteItemCommand } from "@aws-sdk/client-dynamodb";
 import * as tableDefinition from "../../../friendly-sites-api-table.json"
-import { createHostedZone } from "../server/utils/manageHostedZone";
+import { createHostedZone } from "./manageHostedZone";
 
 export async function ensureTableExists() {
     const listTablesCommand = new ListTablesCommand()

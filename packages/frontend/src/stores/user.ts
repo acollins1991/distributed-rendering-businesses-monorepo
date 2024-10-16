@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import type { User } from "lucia";
 import { client } from '../utils/useApi';
 import Cookies from 'js-cookie'
-import { tokenCookieName } from '../../../dashboard/server/utils/authCookieName';
+import { tokenCookieName } from '../../../api/utils/authCookieName';
 
 type UserStore = {
     user: User | null,

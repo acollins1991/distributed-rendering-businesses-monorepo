@@ -2,15 +2,15 @@ import { describe, test, expect, beforeAll, mock, beforeEach } from "bun:test"
 import type { CloudFrontRequestEvent } from 'aws-lambda';
 import type { Distribution } from "@aws-sdk/client-cloudfront"
 import handler from "../handler"
-import { entity, updateGrapeJsProjectData, type Site } from "../../dashboard/server/entities/site";
-import ApiRequestFactory from "../../dashboard/server/factories/ApiRequest";
-import createUserFactory from "../../dashboard/server/factories/User";
-import defaultTemplateContent from "../../dashboard/utils/defaultTemplateContent";
+import { entity, updateGrapeJsProjectData, type Site } from "../../api/entities/site";
+import ApiRequestFactory from "../../api/factories/ApiRequest";
+import createUserFactory from "../../api/factories/User";
+import defaultTemplateContent from "../../api/utils/defaultTemplateContent";
 import { mock as mockType } from "vitest-mock-extended"
 import grapesjs, { type Editor, type ProjectData } from 'grapesjs';
-import createPage from "../../dashboard/server/factories/Page";
+import createPage from "../../api/factories/Page";
 import minifyHtml from "@minify-html/node";
-import createSite from "../../dashboard/server/factories/Site";
+import createSite from "../../api/factories/Site";
 
 // from https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/lambda-event-structure.html#lambda-event-structure-response
 const dummyEventObject = {

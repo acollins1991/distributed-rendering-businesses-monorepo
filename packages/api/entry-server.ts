@@ -1,5 +1,5 @@
 import type { Serve } from "bun";
-import { ensureTableExists } from "../utils/ensureResourcesExist";
+import { ensureTableExists } from "./utils/ensureResourcesExist";
 import { app } from "./honoApp";
 
 await ensureTableExists()
