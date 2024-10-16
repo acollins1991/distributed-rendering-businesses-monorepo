@@ -1,6 +1,6 @@
 FROM oven/bun:1.1.29-debian
 
-RUN apt update && apt install git curl wget unzip zip -y
+RUN apt update && apt install git curl wget unzip zip nano -y
 
 RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
 RUN unzip awscliv2.zip
