@@ -7,7 +7,7 @@
         "vscode": {
             "extensions": [
                 "HashiCorp.terraform",
-                "Vue.volar"
+                "yoavbls.pretty-ts-errors"
             ]
         }
     }

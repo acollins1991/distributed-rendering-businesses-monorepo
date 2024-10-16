@@ -1,15 +1,11 @@
 import { Hono } from 'hono'
-import { z, ZodType } from 'zod'
+import { z } from 'zod'
 import { entity, type Site } from '../entities/site'
 import apiValidateAuthCookie from '../utils/apiValidateAuthCookie'
 import type { User } from 'lucia'
 import { createMiddleware } from 'hono/factory'
 import { entity as userEntity } from "../entities/user"
-import { entity as templateEntity, type Template } from "../entities/template"
 import { zValidator } from '@hono/zod-validator'
-import { SitesService } from '../entities/services/sites'
-import { entity as componentEntity, createComponent, type Component } from '../entities/component'
-// import { SitesService } from '../entities/services/sites'
 
 function protectSiteRecordMiddleware(failedMessage: string) {
     return createMiddleware(async (c, next) => {
@@ -45,9 +41,7 @@ const setSiteRecordMiddleware = createMiddleware(async (c, next) => {
 const sites = new Hono<{
     Variables: {
         site: Site,
-        template: Template,
-        user: User,
-        component: Component
+        user: User
     }
 }>()
 

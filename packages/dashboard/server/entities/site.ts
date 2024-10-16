@@ -1,7 +1,7 @@
 import { CustomAttributeType, Entity, createSchema, type EntityItem } from "electrodb";
 import { client, table } from "../db/index"
 import entityLogger from "../utils/entityLogger";
-import grapesjs, { type Editor, type ProjectData } from 'grapesjs';
+import { type ProjectData } from 'grapesjs';
 
 const schema = createSchema({
     model: {

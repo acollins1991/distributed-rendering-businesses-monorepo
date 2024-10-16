@@ -5,8 +5,6 @@ import signin from './routes/signin'
 import signout from './routes/signout'
 import resetpassword from './routes/resetpassword'
 import user from './routes/user'
-import templates from './routes/templates'
-import components from './routes/components'
 import { logger } from 'hono/logger'
 import { cors } from "hono/cors"
 
