@@ -23,23 +23,7 @@ provider "aws" {
   secret_key = local.envs["AWS_SECRET_ACCESS_KEY"]
 }
 
-resource "aws_s3_bucket" "dashboard_source" {
-  bucket = local.dashboard_source_bucket_name
-
-  force_destroy = true
-
-  tags = {
-    Project = local.project_name
-  }
-}
-
-resource "aws_s3_object" "dashboard_zip" {
-  bucket = aws_s3_bucket.dashboard_source.id
-  key    = "source.zip"
-  source = local.dashboard_zip_path
-  etag   = filemd5(local.dashboard_zip_path)
-}
-
+## DynamoDB table
 
 resource "aws_dynamodb_table" "friendly_sites_table" {
   name         = "friendly_sites"
@@ -79,132 +63,6 @@ resource "aws_dynamodb_table" "friendly_sites_table" {
   }
 }
 
-
-resource "aws_iam_role" "ec2_access_role" {
-  name = "ec2_access_role"
-
-  assume_role_policy = jsonencode({
-    "Version" : "2012-10-17",
-    "Statement" : [
-      {
-        "Effect" : "Allow",
-        "Principal" : {
-          "Service" : "ec2.amazonaws.com"
-        },
-        "Action" : "sts:AssumeRole"
-      }
-    ]
-  })
-
-  inline_policy {
-    policy = jsonencode({
-      "Version" : "2012-10-17",
-      "Statement" : [
-        {
-          "Effect" : "Allow",
-          "Action" : [
-            "s3:GetObject",
-            "s3:ListBucket"
-          ],
-          "Resource" : [
-            format("arn:aws:s3:::%s", aws_s3_bucket.dashboard_source.id),
-            format("arn:aws:s3:::%s/*", aws_s3_bucket.dashboard_source.id)
-          ]
-        },
-        {
-          "Effect" : "Allow",
-          "Action" : [
-            "*"
-          ],
-          "Resource" : [
-            aws_dynamodb_table.friendly_sites_table.arn
-          ]
-        }
-      ]
-    })
-  }
-}
-
-resource "aws_iam_instance_profile" "ec2_access_profile" {
-  name = "ec2_access_profile"
-  role = aws_iam_role.ec2_access_role.name
-}
-
-resource "aws_security_group" "ec2_access_group" {
-  name = "ec2_access_group"
-
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["3.8.37.24/29"]
-  }
-
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0             # Allow all ports for outbound traffic
-    to_port     = 0             # Allow all ports for outbound traffic
-    protocol    = "-1"          # Allow all protocols for outbound traffic
-    cidr_blocks = ["0.0.0.0/0"] # Allow traffic to any destination
-  }
-}
-
-
-resource "aws_instance" "dashboard_server" {
-  ami                    = "ami-01f10c2d6bce70d90"
-  instance_type          = "t2.micro"
-  iam_instance_profile   = aws_iam_instance_profile.ec2_access_profile.name
-  vpc_security_group_ids = [aws_security_group.ec2_access_group.id]
-
-  depends_on = [aws_iam_instance_profile.ec2_access_profile, aws_dynamodb_table.friendly_sites_table, aws_s3_object.dashboard_zip]
-
-  user_data_replace_on_change = true
-
-  user_data = <<-EOL
-  #!/bin/bash -xe
-
-  # should ensure the ec2 instance is redeployed when the dashboard source changes
-  echo ${aws_s3_object.dashboard_zip.etag}
-
-  su ec2-user -c 'aws configure set aws_access_key_id ${local.envs["AWS_ACCESS_KEY_ID"]}'
-  su ec2-user -c 'aws configure set aws_secret_access_key ${local.envs["AWS_SECRET_ACCESS_KEY"]}'
-  su ec2-user -c 'aws configure set default.region ${local.envs["AWS_REGION"]}'
-
-  su ec2-user -c 'curl -fsSL https://bun.sh/install | bash && export BUN_INSTALL="$HOME/.bun" && export PATH="$BUN_INSTALL/bin:$PATH"'
-  su ec2-user -c 'sudo yum -y install yum-plugin-copr && sudo yum -y copr enable @caddy/caddy epel-7-$(arch) && sudo yum -y install caddy'
-
-  cd /home/ec2-user
-  su ec2-user -c 'aws s3 cp s3://${aws_s3_bucket.dashboard_source.id}/source.zip source.zip'
-  su ec2-user -c 'unzip source.zip'
-  su ec2-user -c 'mkdir dist'
-  su ec2-user -c 'mv client/ server/ dist/'
-  su ec2-user -c 'bun run dist/server/entry-server.js' & 
-
-  sudo setcap cap_net_bind_service=+ep $(which caddy)
-  su ec2-user -c 'caddy reverse-proxy --from :80 --to :3000'
-
-  EOL
-
-  tags = {
-    Project = local.project_name
-  }
-}
-
-### cloudfront and lambda@edge
-
 data "aws_iam_policy_document" "assume_role" {
   statement {
     effect = "Allow"
@@ -221,133 +79,180 @@ data "aws_iam_policy_document" "assume_role" {
   }
 }
 
-resource "aws_iam_role" "iam_for_lambda" {
-  name               = "iam_for_lambda"
-  assume_role_policy = data.aws_iam_policy_document.assume_role.json
+resource "aws_iam_role" "iam_for_table_access" {
+  name               = "iam_for_table_access"
+  assume_role_policy = data.aws_iam_policy_document.assume_role
 
   managed_policy_arns = [
     "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
   ]
 }
 
-data "archive_file" "lambda" {
+## API Lambda handler and gateway
+
+data "archive_file" "api_handler_source_zip" {
   type        = "zip"
-  source_file = local.lambda_path
-  output_path = "dist/lambda_function_payload.zip"
-}
+  output_path = "${path.module}/files/dotfiles.zip"
+  excludes    = ["${path.module}/unwanted.zip"]
 
-resource "aws_lambda_function" "test_lambda" {
-
-  # use us-east-1 region provider
-  provider = aws.us-east-1
-
-  filename      = "dist/lambda_function_payload.zip"
-  function_name = "lambda_function_name"
-  role          = aws_iam_role.iam_for_lambda.arn
-  handler       = "index.handler"
-
-  source_code_hash = data.archive_file.lambda.output_base64sha256
-
-  runtime = "nodejs18.x"
-
-  publish = true
-}
-
-resource "aws_s3_bucket_website_configuration" "example" {
-  bucket = aws_s3_bucket.dummy_s3_bucket_for_cloudfront_origin.id
-
-  index_document {
-    suffix = "index.html"
-  }
-
-  error_document {
-    key = "error.html"
+  source {
+    content  = local.api_handler_source_dir
+    filename = "handler.zip"
   }
 }
 
-resource "aws_s3_bucket" "dummy_s3_bucket_for_cloudfront_origin" {
-  bucket = "dummy-s3-bucket-for-cloudfront-origin"
-}
+resource "aws_s3_bucket" "api_handler_source" {
+  bucket = local.api_handler_source_bucket_name
 
-locals {
-  cloudfront_distribution_origin_id = "cloudfront_distribution_proxy_1234567"
-}
-
-resource "aws_route53_record" "cloudfront_alias_record" {
-  zone_id = "Z08252061K6DE4BQKWVWJ"
-  name    = "*.pagegenerator.link"
-  type    = "A"
-
-  alias {
-    # name                   = aws_elb.main.dns_name
-    # zone_id                = aws_elb.main.zone_id
-    name                   = aws_cloudfront_distribution.cloudfront_distribution.domain_name
-    zone_id                = aws_cloudfront_distribution.cloudfront_distribution.hosted_zone_id
-    evaluate_target_health = true
-  }
-}
-
-resource "aws_cloudfront_distribution" "cloudfront_distribution" {
-  depends_on = [aws_lambda_function.test_lambda]
-
-  aliases = ["pagegenerator.link", "*.pagegenerator.link"]
-
-  origin {
-    # custom_origin_config {
-    #   http_port              = 80
-    #   https_port             = 443
-    #   origin_protocol_policy = "match-viewer"
-    #   origin_ssl_protocols   = ["TLSv1.2"]
-    # }
-    domain_name = aws_s3_bucket.dummy_s3_bucket_for_cloudfront_origin.bucket_domain_name
-    origin_id   = local.cloudfront_distribution_origin_id
-  }
-
-  enabled = true
-
-  http_version = "http2"
-
-  default_cache_behavior {
-    allowed_methods  = ["GET", "HEAD", "OPTIONS"]
-    cached_methods   = ["GET", "HEAD", "OPTIONS"]
-    target_origin_id = local.cloudfront_distribution_origin_id
-
-    forwarded_values {
-      query_string = false
-      cookies {
-        forward = "none"
-      }
-      headers = ["Host"]
-    }
-
-    lambda_function_association {
-      event_type = "origin-request"
-      lambda_arn = aws_lambda_function.test_lambda.qualified_arn
-    }
-
-    min_ttl                = 0
-    default_ttl            = 86400
-    max_ttl                = 31536000
-    compress               = true
-    viewer_protocol_policy = "allow-all"
-  }
-
-
-  restrictions {
-    geo_restriction {
-      restriction_type = "none"
-      locations        = []
-    }
-  }
+  force_destroy = true
 
   tags = {
-    Project                         = local.project_name
-    default_cloudfront_distribution = true
-  }
-
-  viewer_certificate {
-    acm_certificate_arn      = "arn:aws:acm:us-east-1:258587214769:certificate/bf050f0d-fcc2-4a2f-838a-7963f0c8ce69"
-    minimum_protocol_version = "TLSv1.2_2021"
-    ssl_support_method       = "sni-only"
+    Project = local.project_name
   }
 }
+
+resource "aws_s3_object" "api_handler_source_zip" {
+  bucket = aws_s3_bucket.api_handler_source.id
+  key    = "source.zip"
+  source = local.api_handler_source_dir
+}
+
+resource "aws_lambda_function" "api_handler" {
+  function_name = "DistributedRendererApi"
+
+  # The bucket name as created earlier with "aws s3api create-bucket"
+  s3_bucket = aws_s3_bucket.api_handler_source
+  s3_key    = "handler.zip"
+
+  handler = "handler.handler"
+  # bun runtime https://learnaws.io/blog/bun-aws-lambda#:~:text=Use%20public%20Bun%20Lambda%20layer
+  runtime = "arn:aws:lambda:us-east-1:205979422636:layer:bun:1"
+
+  role = "${aws_iam_role.iam_for_table_access.arn}"
+
+  depends_on = [ aws_s3_object.api_handler_source_zip ]
+}
+
+### cloudfront and lambda@edge
+
+# data "archive_file" "lambda" {
+#   type        = "zip"
+#   source_file = local.lambda_path
+#   output_path = "dist/lambda_function_payload.zip"
+# }
+
+# resource "aws_lambda_function" "test_lambda" {
+
+#   # use us-east-1 region provider
+#   provider = aws.us-east-1
+
+#   filename      = "dist/lambda_function_payload.zip"
+#   function_name = "lambda_function_name"
+#   role          = aws_iam_role.iam_for_lambda.arn
+#   handler       = "index.handler"
+
+#   source_code_hash = data.archive_file.lambda.output_base64sha256
+
+#   runtime = "nodejs18.x"
+
+#   publish = true
+# }
+
+# resource "aws_s3_bucket_website_configuration" "example" {
+#   bucket = aws_s3_bucket.dummy_s3_bucket_for_cloudfront_origin.id
+
+#   index_document {
+#     suffix = "index.html"
+#   }
+
+#   error_document {
+#     key = "error.html"
+#   }
+# }
+
+# resource "aws_s3_bucket" "dummy_s3_bucket_for_cloudfront_origin" {
+#   bucket = "dummy-s3-bucket-for-cloudfront-origin"
+# }
+
+# locals {
+#   cloudfront_distribution_origin_id = "cloudfront_distribution_proxy_1234567"
+# }
+
+# resource "aws_route53_record" "cloudfront_alias_record" {
+#   zone_id = "Z08252061K6DE4BQKWVWJ"
+#   name    = "*.pagegenerator.link"
+#   type    = "A"
+
+#   alias {
+#     # name                   = aws_elb.main.dns_name
+#     # zone_id                = aws_elb.main.zone_id
+#     name                   = aws_cloudfront_distribution.cloudfront_distribution.domain_name
+#     zone_id                = aws_cloudfront_distribution.cloudfront_distribution.hosted_zone_id
+#     evaluate_target_health = true
+#   }
+# }
+
+# resource "aws_cloudfront_distribution" "cloudfront_distribution" {
+#   depends_on = [aws_lambda_function.test_lambda]
+
+#   aliases = ["pagegenerator.link", "*.pagegenerator.link"]
+
+#   origin {
+#     # custom_origin_config {
+#     #   http_port              = 80
+#     #   https_port             = 443
+#     #   origin_protocol_policy = "match-viewer"
+#     #   origin_ssl_protocols   = ["TLSv1.2"]
+#     # }
+#     domain_name = aws_s3_bucket.dummy_s3_bucket_for_cloudfront_origin.bucket_domain_name
+#     origin_id   = local.cloudfront_distribution_origin_id
+#   }
+
+#   enabled = true
+
+#   http_version = "http2"
+
+#   default_cache_behavior {
+#     allowed_methods  = ["GET", "HEAD", "OPTIONS"]
+#     cached_methods   = ["GET", "HEAD", "OPTIONS"]
+#     target_origin_id = local.cloudfront_distribution_origin_id
+
+#     forwarded_values {
+#       query_string = false
+#       cookies {
+#         forward = "none"
+#       }
+#       headers = ["Host"]
+#     }
+
+#     lambda_function_association {
+#       event_type = "origin-request"
+#       lambda_arn = aws_lambda_function.test_lambda.qualified_arn
+#     }
+
+#     min_ttl                = 0
+#     default_ttl            = 86400
+#     max_ttl                = 31536000
+#     compress               = true
+#     viewer_protocol_policy = "allow-all"
+#   }
+
+
+#   restrictions {
+#     geo_restriction {
+#       restriction_type = "none"
+#       locations        = []
+#     }
+#   }
+
+#   tags = {
+#     Project                         = local.project_name
+#     default_cloudfront_distribution = true
+#   }
+
+#   viewer_certificate {
+#     acm_certificate_arn      = "arn:aws:acm:us-east-1:258587214769:certificate/bf050f0d-fcc2-4a2f-838a-7963f0c8ce69"
+#     minimum_protocol_version = "TLSv1.2_2021"
+#     ssl_support_method       = "sni-only"
+#   }
+# }
