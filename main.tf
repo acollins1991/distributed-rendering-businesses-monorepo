@@ -80,8 +80,8 @@ data "aws_iam_policy_document" "assume_role" {
 }
 
 resource "aws_iam_role" "iam_for_table_access" {
-  name               = "iam_for_table_access"
-  assume_role_policy = data.aws_iam_policy_document.assume_role
+  name               = "iam_for_lambda_table_access"
+  assume_role_policy = data.aws_iam_policy_document.assume_role.json
 
   managed_policy_arns = [
     "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
@@ -92,19 +92,16 @@ resource "aws_iam_role" "iam_for_table_access" {
 
 data "archive_file" "api_handler_source_zip" {
   type        = "zip"
-  output_path = "${path.module}/files/dotfiles.zip"
-  excludes    = ["${path.module}/unwanted.zip"]
-
-  source {
-    content  = local.api_handler_source_dir
-    filename = "handler.zip"
-  }
+  source_dir = local.api_handler_source_dir
+  output_path = local.api_handler_source_output
 }
 
 resource "aws_s3_bucket" "api_handler_source" {
   bucket = local.api_handler_source_bucket_name
 
   force_destroy = true
+
+  depends_on = [ data.archive_file.api_handler_source_zip ]
 
   tags = {
     Project = local.project_name
@@ -113,20 +110,22 @@ resource "aws_s3_bucket" "api_handler_source" {
 
 resource "aws_s3_object" "api_handler_source_zip" {
   bucket = aws_s3_bucket.api_handler_source.id
-  key    = "source.zip"
-  source = local.api_handler_source_dir
+  key    = local.api_handler_zip_filename
+  source = local.api_handler_source_output
+  etag = filemd5(local.api_handler_source_output)
+  depends_on = [ data.archive_file.api_handler_source_zip ]
 }
 
 resource "aws_lambda_function" "api_handler" {
   function_name = "DistributedRendererApi"
 
   # The bucket name as created earlier with "aws s3api create-bucket"
-  s3_bucket = aws_s3_bucket.api_handler_source
-  s3_key    = "handler.zip"
+  s3_bucket = aws_s3_bucket.api_handler_source.id
+  s3_key    = local.api_handler_zip_filename
 
   handler = "handler.handler"
-  # bun runtime https://learnaws.io/blog/bun-aws-lambda#:~:text=Use%20public%20Bun%20Lambda%20layer
-  runtime = "arn:aws:lambda:us-east-1:205979422636:layer:bun:1"
+  runtime = "provided.al2"
+  layers = [ "arn:aws:lambda:eu-west-2:258587214769:layer:bun:2" ]
 
   role = "${aws_iam_role.iam_for_table_access.arn}"
 
