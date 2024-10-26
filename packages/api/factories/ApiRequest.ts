@@ -1,6 +1,54 @@
+import { handler } from "../handler";
 import { app } from "../honoApp";
 import { tokenCookieName } from "../utils/authCookieName";
 import createUserFactory from "./User";
+
+type HandlerEvent = Parameters<typeof handler>[0]
+
+function createEvent(endpoint: string, body: Object, method: 'GET' | 'POST' | 'PATCH' | 'DELETE', cookie: string) {
+
+    const url = new URL(endpoint)
+    const stringifiedBody = body ? JSON.stringify(body) : undefined
+
+    return {
+        "resource": url.pathname,
+        "path": url.pathname,
+        "httpMethod": method,
+        "body": stringifiedBody,
+        "rawPath": url.pathname,
+        "requestContext": {
+            "resourcePath": url.pathname,
+            "httpMethod": method,
+            "path": "/Prod/",
+            "body": stringifiedBody,
+            "http": {
+                "method": method
+            }
+        },
+        "headers": {
+            "Cookie": cookie,
+            "Content-Type": "application/json",
+            "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+            "accept-encoding": "gzip, deflate, br",
+            "Host": "70ixmpl4fl.execute-api.us-east-2.amazonaws.com",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36",
+            "X-Amzn-Trace-Id": "Root=1-5e66d96f-7491f09xmpl79d18acf3d050",
+        },
+        "multiValueHeaders": {
+            "accept": [
+                "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
+            ],
+            "accept-encoding": [
+                "gzip, deflate, br"
+            ],
+        },
+        "queryStringParameters": undefined,
+        "multiValueQueryStringParameters": null,
+        "pathParameters": undefined,
+        "stageVariables": undefined,
+        "isBase64Encoded": false
+    }
+}
 
 export default class ApiRequestFactory {
 
@@ -74,6 +122,9 @@ export default class ApiRequestFactory {
             this.config.headers['Cookie'] = `${tokenCookieName}=${this.cookie}`
         }
 
-        return app.request(this.endpoint, this.config)
+        const event = createEvent(`http://localhost:3000/${this.endpoint}`, this.config.body, this.config.method, this.config.headers['Cookie'])
+
+        // return app.request(this.endpoint, this.config)
+        return handler(event)
     }
 }

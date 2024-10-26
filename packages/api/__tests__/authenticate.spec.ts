@@ -12,10 +12,10 @@ describe("/authenticate", () => {
             const { valid } = await validateBearerToken(session.id)
             expect(valid).toBe(true)
 
-            const res = await new ApiRequestFactory("/api/authenticate").post.setAuthSession(crypto.randomUUID()).go()
-            expect(res.status).toBe(200)
+            const res = await new ApiRequestFactory("authenticate").post.setAuthSession(crypto.randomUUID()).go()
+            expect(res.statusCode).toBe(200)
 
-            const json = await res.json()
+            const json = JSON.parse(res.body)
 
             expect(json.authenticated).toBe(false)
             expect(json.user).toBeFalsy()
@@ -28,10 +28,10 @@ describe("/authenticate", () => {
             const { valid } = await validateBearerToken(session.id)
             expect(valid).toBe(true)
 
-            const res = await new ApiRequestFactory("/api/authenticate").post.setAuthSession(session.id).go()
-            expect(res.status).toBe(200)
+            const res = await new ApiRequestFactory("authenticate").post.setAuthSession(session.id).go()
+            expect(res.statusCode).toBe(200)
 
-            const json = await res.json()
+            const json = JSON.parse(res.body)
 
             expect(json.authenticated).toBe(true)
             expect(json.user).toBeTruthy()

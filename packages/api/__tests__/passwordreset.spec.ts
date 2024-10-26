@@ -23,13 +23,13 @@ describe('/passwordreset', () => {
 
         test("if account exists for the email return a 200 with success and reset token record is created", async () => {
 
-            const res = await new ApiRequestFactory('/api/passwordreset', {
+            const res = await new ApiRequestFactory('passwordreset', {
                 email: databaseUser.email
             }).post.go()
 
-            const json = await res.json()
+            const json = JSON.parse(res.body)
 
-            expect(res.status).toBe(200)
+            expect(res.statusCode).toBe(200)
             expect(json.message).toBe(`If an account exists for ${databaseUser.email} an email will be sent with a reset link`)
             const { data: resettoken } = await entity.scan.where(({ userEmail }, { eq }) => eq(userEmail, databaseUser.email)).go()
             expect(resettoken).toBeTruthy()
@@ -43,12 +43,12 @@ describe('/passwordreset', () => {
             })
 
             //
-            const res = await new ApiRequestFactory('/api/passwordreset', {
+            const res = await new ApiRequestFactory('passwordreset', {
                 email
             }).post.go()
 
-            expect(res.status).toBe(200)
-            const json = await res.json()
+            expect(res.statusCode).toBe(200)
+            const json = JSON.parse(res.body)
             expect(json.message).toBe(`If an account exists for ${email} an email will be sent with a reset link`)
             const { data: [resettoken] } = await entity.scan.where(({ userEmail }, { eq }) => eq(userEmail, email)).go()
             expect(resettoken).toBeFalsy()
@@ -84,12 +84,12 @@ describe('/passwordreset', () => {
         test("request with invalid token returns the invalid message", async () => {
 
             //
-            const res = await new ApiRequestFactory(`/api/passwordreset/${crypto.randomUUID()}`, {
+            const res = await new ApiRequestFactory(`passwordreset/${crypto.randomUUID()}`, {
                 password: newPassword
             }).patch.go()
 
-            const json = await res.json()
-            expect(res.status).toBe(400)
+            const json = JSON.parse(res.body)
+            expect(res.statusCode).toBe(400)
             expect(json.message).toBe("The password reset link is invalid or expired. Please request a new password reset.")
         })
 
@@ -99,12 +99,12 @@ describe('/passwordreset', () => {
             setSystemTime(add(Date.now(), { days: 2 }))
 
             //
-            const res = await new ApiRequestFactory(`/api/passwordreset/${resetToken.tokenId}`, {
+            const res = await new ApiRequestFactory(`passwordreset/${resetToken.tokenId}`, {
                 password: newPassword
             }).patch.go()
 
-            expect(res.status).toBe(400)
-            const json = await res.json()
+            expect(res.statusCode).toBe(400)
+            const json = JSON.parse(res.body)
             expect(json.message).toBe("The password reset link is invalid or expired. Please request a new password reset.")
 
             // reset system time
@@ -121,7 +121,7 @@ describe('/passwordreset', () => {
             const { password_hash } = databaseUser
 
             //
-            const res = await new ApiRequestFactory(`/api/passwordreset/${resetToken.tokenId}`, {
+            const res = await new ApiRequestFactory(`passwordreset/${resetToken.tokenId}`, {
                 password: newPassword
             }).patch.go()
 
@@ -135,8 +135,8 @@ describe('/passwordreset', () => {
             const { data: resetTokenRecord } = await entity.get({ tokenId: resetToken.tokenId }).go()
             expect(resetTokenRecord).toBeFalsy()
 
-            const json = await res.json()
-            expect(res.status).toBe(200)
+            const json = JSON.parse(res.body)
+            expect(res.statusCode).toBe(200)
             expect(json.message).toBe('Password updated')
 
         })

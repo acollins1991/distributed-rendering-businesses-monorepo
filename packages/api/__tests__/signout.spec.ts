@@ -24,9 +24,8 @@ describe("/signout", () => {
             expect(valid).toBe(true)
 
             //
-            const res = await new ApiRequestFactory("/api/signout").post.setAuthSession(bearerToken).go()
-
-            expect(res.status).toBe(200)
+            const res = await new ApiRequestFactory("signout").post.setAuthSession(bearerToken).go()
+            expect(res.statusCode).toBe(200)
         })
 
     })

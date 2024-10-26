@@ -40,10 +40,10 @@ describe("/signup endpoint", () => {
                 password: weakPassword
             }
 
-            const res = await new ApiRequestFactory("/api/signup", personRequest).post.go()
+            const res = await new ApiRequestFactory("signup", personRequest).post.go()
 
-            expect(res.status).toBe(400)
-            expect((await res.json()).message).toBe("Password too weak")
+            expect(res.statusCode).toBe(400)
+            expect(JSON.parse(res.body).message).toBe("Password too weak")
         })
 
         test('successful request creates user and session', async () => {
@@ -55,10 +55,10 @@ describe("/signup endpoint", () => {
                 password
             }
 
-            const res = await new ApiRequestFactory("/api/signup", personRequest).post.go()
+            const res = await new ApiRequestFactory("signup", personRequest).post.go()
 
             // returns redirect
-            expect(res.status).toBe(200)
+            expect(res.statusCode).toBe(200)
 
             // get user with email
             const { data: users } = await userEntity.scan.where(({ email: recordEmail }, { eq }) => eq(recordEmail, userDetails.email)).go()
@@ -66,7 +66,7 @@ describe("/signup endpoint", () => {
             expect(targetUser.email).toBe(userDetails.email)
 
             // returns token, which is bearer token for user
-            const json = await res.json()
+            const json = JSON.parse(res.body)
             const { data: sessions } = await sessionEntity.scan.go()
             const targetSession = sessions.find(session => session.sessionId === json.token)
             expect(targetSession?.userId).toBe(targetUser.userId)
@@ -85,10 +85,10 @@ describe("/signup endpoint", () => {
                 password
             }
 
-            const res = await new ApiRequestFactory("/api/signup", personRequest).post.go()
+            const res = await new ApiRequestFactory("signup", personRequest).post.go()
 
-            expect(res.status).toBe(400)
-            const json = await res.json()
+            expect(res.statusCode).toBe(400)
+            const json = JSON.parse(res.body)
             expect(json.message).toBe('Account with this email already exists')
         })
     })

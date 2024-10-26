@@ -25,11 +25,11 @@ describe("/user", () => {
             expect(valid).toBe(true)
 
             //
-            const res = await new ApiRequestFactory("/api/user").setAuthSession(bearerToken).go()
+            const res = await new ApiRequestFactory("user").setAuthSession(bearerToken).go()
 
-            expect(res.status).toBe(200)
-            const json = await res.json()
-            expect(json.id).toBe(user?.id)
+            expect(res.statusCode).toBe(200)
+            const { id } = JSON.parse(res.body)
+            expect(id).toBe(user?.id)
         })
 
     })
@@ -43,13 +43,15 @@ describe("/user", () => {
                 firstName: newFirstName,
             })
 
-            const res = await new ApiRequestFactory("/api/user", {
+            const res = await new ApiRequestFactory("user", {
                 first_name: newFirstName,
                 email: newEmail
             }).patch.setAuthSession(bearerToken).go()
 
-            expect(res.status).toBe(200)
-            const json = await res.json()
+            
+            const json = JSON.parse(res.body)
+
+            expect(res.statusCode).toBe(200)
             expect(json.userId).toBe(databaseUser.userId)
             expect(json.first_name).toBe(newFirstName)
             expect(json.email).toBe(newEmail)

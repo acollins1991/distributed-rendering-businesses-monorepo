@@ -26,15 +26,17 @@ user.get(
 
 user.patch(
     "/",
-    zValidator("json", z.object({
+    zValidator("json", z.string().transform(value => JSON.parse(value)).pipe(z.object({
         first_name: z.string(),
         last_name: z.string(),
         email: z.string()
-    }).partial()),
+    }).partial())),
     apiValidateAuthCookie,
     async (c) => {
 
         const patchObject = c.req.valid("json")
+
+        console.log(patchObject, await c.req.text())
 
         try {
 

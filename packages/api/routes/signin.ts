@@ -17,10 +17,10 @@ function badSignIn(c: Context) {
 
 signin.post(
     "/",
-    zValidator("json", z.object({
+    zValidator("json", z.string().transform(value => JSON.parse(value)).pipe(z.object({
         email: z.string(),
         password: z.string()
-    })),
+    }))),
     async (c) => {
 
         const {

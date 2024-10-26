@@ -13,7 +13,6 @@ import editor from './routes/editor'
 
 // required for rpc client
 const app = new Hono()
-    .basePath('/api')
     .use(cors({
         origin: ["http://localhost:8080/"],
         credentials: true

@@ -25,14 +25,14 @@ describe("/signin", () => {
                 password
             })
 
-            const res = await new ApiRequestFactory("/api/signin", {
+            const res = await new ApiRequestFactory("signin", {
                 email,
                 password
             }).post.go()
 
-            expect(res.status).toBe(200)
+            expect(res.statusCode).toBe(200)
 
-            const json = await res.json()
+            const json = JSON.parse(res.body)
 
             expect(json.token).toBeTruthy()
             expect(session).toBeTruthy()
