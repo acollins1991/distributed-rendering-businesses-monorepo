@@ -44,99 +44,93 @@ const sites = new Hono<{
         user: User
     }
 }>()
+    // protect these routes
+    .use(apiValidateAuthCookie)
+    // sites targeting specific site inject site record to site var
+    .use("/:siteId/*", setSiteRecordMiddleware)
+    .get(
+        "/",
+        async (c) => {
+            const user = c.get("user") as User
 
-// protect these routes
-sites.use("*", apiValidateAuthCookie)
-// sites targeting specific site inject site record to site var
-sites.use("/:siteId/*", setSiteRecordMiddleware)
+            if (!user.sites?.length) {
+                return c.json([], 200)
+            }
 
-sites.get(
-    "/",
-    async (c) => {
-        const user = c.get("user") as User
+            const { data: sites } = await entity.get(
+                // batch get query
+                user.sites.map(site => ({ siteId: site }))
+            ).go()
 
-        if (!user.sites?.length) {
-            return c.json([], 200)
-        }
+            return c.json(sites, 200)
+        })
+    // /sites POST
+    .post(
+        "/",
+        zValidator("json", z.object({
+            name: z.string()
+        })),
+        async (c) => {
+            const { name } = c.req.valid("json")
 
-        const { data: sites } = await entity.get(
-            // batch get query
-            user.sites.map(site => ({ siteId: site }))
-        ).go()
+            try {
 
-        return c.json(sites, 200)
-    })
+                const { friendlySitesDomainGenerator } = await import('../utils/friendlySitesDomainGenerator')
+                const domain = friendlySitesDomainGenerator()
 
-// /sites POST
-sites.post(
-    "/",
-    zValidator("json", z.object({
-        name: z.string()
-    })),
-    async (c) => {
-        const { name } = c.req.valid("json")
+                const { data: site } = await entity.create({
+                    name,
+                    domain,
+                }).go()
 
-        try {
+                // add new site id to the user record as ownership signal
+                const user = c.get("user")
+                await userEntity.patch({ userId: user.userId }).append({ sites: [site.siteId] }).go()
 
-            const { friendlySitesDomainGenerator } = await import('../utils/friendlySitesDomainGenerator')
-            const domain = friendlySitesDomainGenerator()
+                return c.json(site, 200)
+            } catch (e: any) {
+                return c.json(e, 500)
+            }
+        })
+    // /sites PATCH
+    .patch(
+        "/:siteId",
+        zValidator("json", z.object({
+            name: z.string().optional()
+        }).partial()),
+        protectSiteRecordMiddleware('User cannot edit site record'),
+        async (c) => {
 
-            const { data: site } = await entity.create({
-                name,
-                domain,
-            }).go()
+            const patchObject = c.req.valid("json")
+            const existingRecord = c.get("site")
 
-            // add new site id to the user record as ownership signal
-            const user = c.get("user")
-            await userEntity.patch({ userId: user.userId }).append({ sites: [site.siteId] }).go()
+            const updatedRecordCommand = entity.patch({ siteId: existingRecord.siteId })
+                .set(patchObject)
+
+            const updatedRecord = await updatedRecordCommand
+                // should return full record
+                .go({ response: "all_new" })
+
+            return c.json(updatedRecord.data, 200)
+        })
+    // /sites DELETE
+    .delete(
+        "/:siteId",
+        protectSiteRecordMiddleware('User cannot delete site record'),
+        async (c) => {
+            const siteId = c.req.param('siteId')
+            const site = await entity.delete({ siteId }).go()
 
             return c.json(site, 200)
-        } catch (e: any) {
-            return c.json(e, 500)
-        }
-    })
+        })
+    // /sites GET
+    .get(
+        "/:siteId",
+        protectSiteRecordMiddleware('User cannot get site record'),
+        async (c) => {
+            const site = c.get("site")
 
-// /sites PATCH
-sites.patch(
-    "/:siteId",
-    zValidator("json", z.object({
-        name: z.string().optional()
-    }).partial()),
-    protectSiteRecordMiddleware('User cannot edit site record'),
-    async (c) => {
-
-        const patchObject = c.req.valid("json")
-        const existingRecord = c.get("site")
-
-        const updatedRecordCommand = entity.patch({ siteId: existingRecord.siteId })
-            .set(patchObject)
-
-        const updatedRecord = await updatedRecordCommand
-            // should return full record
-            .go({ response: "all_new" })
-
-        return c.json(updatedRecord.data, 200)
-    })
-
-// /sites DELETE
-sites.delete(
-    "/:siteId",
-    protectSiteRecordMiddleware('User cannot delete site record'),
-    async (c) => {
-        const siteId = c.req.param('siteId')
-        const site = await entity.delete({ siteId }).go()
-
-        return c.json(site, 200)
-    })
-
-// /sites GET
-sites.get(
-    "/:siteId",
-    protectSiteRecordMiddleware('User cannot get site record'),
-    async (c) => {
-        const site = c.get("site")
-
-        return c.json(site, 200)
-    })
+            return c.json(site, 200)
+        })
 
 export default sites

@@ -10,47 +10,44 @@ const user = new Hono<{
         user: User
     }
 }>()
+    .use(apiValidateAuthCookie)
+    .get(
+        "/",
+        async (c) => {
+            try {
+                const user = c.get("user") as User
+                return c.json(user, 200)
 
-user.get(
-    "/",
-    apiValidateAuthCookie,
-    async (c) => {
-        try {
-            const user = c.get("user") as User
-            return c.json(user, 200)
+            } catch (e: any) {
+                return c.json(e, 400)
+            }
+        })
+    .patch(
+        "/",
+        zValidator("json", z.object({
+            first_name: z.string(),
+            last_name: z.string(),
+            email: z.string()
+        }).partial()),
+        async (c) => {
 
-        } catch (e: any) {
-            return c.json(e, 400)
-        }
-    })
+            const patchObject = c.req.valid("json")
 
-user.patch(
-    "/",
-    zValidator("json", z.object({
-        first_name: z.string(),
-        last_name: z.string(),
-        email: z.string()
-    }).partial()),
-    apiValidateAuthCookie,
-    async (c) => {
+            console.log(patchObject, await c.req.text())
 
-        const patchObject = c.req.valid("json")
+            try {
 
-        console.log(patchObject, await c.req.text())
+                const user = c.get("user") as User
 
-        try {
+                const { data: updatedUser } = await entity.patch({ userId: user.userId }).set(patchObject).go({
+                    response: "all_new"
+                })
 
-            const user = c.get("user") as User
+                return c.json(updatedUser, 200)
 
-            const { data: updatedUser } = await entity.patch({ userId: user.userId }).set(patchObject).go({
-                response: "all_new"
-            })
-
-            return c.json(updatedUser, 200)
-
-        } catch (e: any) {
-            return c.json(e, 400)
-        }
-    })
+            } catch (e: any) {
+                return c.json(e, 400)
+            }
+        })
 
 export default user
