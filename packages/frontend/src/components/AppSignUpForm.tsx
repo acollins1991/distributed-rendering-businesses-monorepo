@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom'
 export default function AppSignUpForm() {
 
     const [isBusy, setIsBusy] = useState(false)
-    const setUser = useUserStore((state) => state.setUser)
+    const setToken = useUserStore((state) => state.setToken)
     const navigate = useNavigate()
 
     const formHandler: FormEventHandler<HTMLFormElement> = async (event) => {
@@ -26,7 +26,8 @@ export default function AppSignUpForm() {
             const res = await client.api.signup.$post({
                 json: details
             })
-            setUser(res.token)
+            const { token } = await res.json()
+            setToken(token)
         } catch (e) {
             console.log(e)
         } finally {

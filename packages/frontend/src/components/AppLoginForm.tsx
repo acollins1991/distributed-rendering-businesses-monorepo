@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom'
 export default function AppLoginForm() {
 
     const [isBusy, setIsBusy] = useState(false)
+    const setToken = useUserStore((state) => state.setToken)
 
     const formHandler: FormEventHandler<HTMLFormElement> = async (event: Event) => {
 
@@ -24,6 +25,8 @@ export default function AppLoginForm() {
             const res = await client.api.signin.$post({
                 json: details
             })
+            const { token } = await res.json()
+            setToken(token)
         } catch (e) {
             console.log(e)
         } finally {

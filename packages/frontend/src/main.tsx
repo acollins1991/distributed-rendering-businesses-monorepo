@@ -30,10 +30,10 @@ const SplashPage = ({ children }: { children: JSX.Element }) => {
   const token = useUserStore(state => state.token)
 
   useEffect(() => {
-    console.log(token, isAuthenticated)
     setTimeout(() => {
       if (token) {
-        setUser(token)
+        console.log(typeof token, token)
+        setUser()
       } else if (window.location.href !== `${location.origin}/login`) {
         window.location.href = `${location.origin}/login`
       }

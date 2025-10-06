@@ -1,30 +1,36 @@
 import { create } from 'zustand'
 import type { User } from "lucia";
 import { client } from '../utils/useApi';
-import Cookies from 'js-cookie'
-import { tokenCookieName } from '../../../api/utils/authCookieName';
 
 type UserStore = {
     user: User | null,
     isAuthenticated: boolean,
     isLoading: boolean,
-    setUser: (token: string) => Promise<void>,
+    setUser: () => Promise<void>,
     setIsLoading: (value: boolean) => void,
     token: string | null,
+    setToken: (token: string) => void,
     signOut: () => Promise<void>
 }
 
-export const useUserStore = create<UserStore>()((set) => ({
+export const useUserStore = create<UserStore>()((set, get) => ({
     user: null,
     isAuthenticated: false,
     isLoading: true,
-    token: Cookies.get(tokenCookieName) as string || null,
+    token: localStorage.getItem('friendly_sites_token') as string || null,
+    setToken(token: string) {
+        localStorage.setItem('friendly_sites_token', token)
+        set({ token })
+    },
     async setUser() {
         set({ isLoading: true })
         const res = await client.api.user.$get()
         if( res.status === 200 ) {
             set({ user: await res.json() })
         } 
+        if( res.status === 403 ) {
+            set( { token: null } )
+        }
         set({ isLoading: false, isAuthenticated: res.status === 200 })
     },
     setIsLoading(value) {
@@ -33,7 +39,7 @@ export const useUserStore = create<UserStore>()((set) => ({
     async signOut() {
         set({ isLoading: true })
         await client.api.signout.$post()
-        Cookies.remove(tokenCookieName)
+        localStorage.removeItem('friendly_sites_token')
         set({ isLoading: false, isAuthenticated: false, token: null, user: null })
     }
 }))
