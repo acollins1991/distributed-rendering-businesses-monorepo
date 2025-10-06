@@ -1,16 +1,16 @@
 import { Hono } from "hono";
-import apiValidateAuthCookie from "../utils/apiValidateAuthCookie";
 import type { User } from "lucia";
 import { entity } from "../entities/user";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
+import apiAuthenticateRequest from "../utils/apiAuthenticateRequest";
 
 const user = new Hono<{
     Variables: {
         user: User
     }
 }>()
-    .use(apiValidateAuthCookie)
+    .use(apiAuthenticateRequest)
     .get(
         "/",
         async (c) => {
@@ -32,8 +32,6 @@ const user = new Hono<{
         async (c) => {
 
             const patchObject = c.req.valid("json")
-
-            console.log(patchObject, await c.req.text())
 
             try {
 

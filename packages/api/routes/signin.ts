@@ -5,7 +5,6 @@ import { entity } from "../entities/user";
 import { password as bunPassword } from "bun";
 import { add } from "date-fns";
 import { zValidator } from "@hono/zod-validator";
-import setAuthCookie from "../utils/setAuthCookie";
 
 const signin = new Hono()
 
@@ -48,8 +47,6 @@ signin.post(
                     months: 1
                 }).getTime()
             });
-
-            setAuthCookie(c, session)
 
             return c.json({
                 token: session.id

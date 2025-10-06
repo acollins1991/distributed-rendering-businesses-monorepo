@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { auth } from "../auth";
-import apiValidateAuthCookie from "../utils/apiValidateAuthCookie";
 import type { User } from "lucia";
+import apiAuthenticateRequest from "../utils/apiAuthenticateRequest";
 
 const signout = new Hono<{
     Variables: {
@@ -11,7 +11,7 @@ const signout = new Hono<{
 
 signout.post(
     "/",
-    apiValidateAuthCookie,
+    apiAuthenticateRequest,
     async (c) => {
         const user = c.get("user")
         await auth.invalidateUserSessions(user.id)

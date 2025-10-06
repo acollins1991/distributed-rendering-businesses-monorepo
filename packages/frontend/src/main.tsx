@@ -30,7 +30,7 @@ const SplashPage = ({ children }: { children: JSX.Element }) => {
   const token = useUserStore(state => state.token)
 
   useEffect(() => {
-    console.log(token, isLoading)
+    console.log(token, isAuthenticated)
     setTimeout(() => {
       if (token) {
         setUser(token)
@@ -47,23 +47,29 @@ const SplashPage = ({ children }: { children: JSX.Element }) => {
   </>
 }
 
+const App = () => {
+  return (
+    <Routes>
+      <Route path="/login" element={<GuestRoute>
+        <Login />
+      </GuestRoute>} />
+      <Route path="/signup" element={<GuestRoute>
+        <Signup />
+      </GuestRoute>} />
+      <Route path="/" element={<AuthenticatedLayout />}>
+        <Route path="/" element={<Home />} />
+        <Route path="/add-new-site" element={<AddNewSite />} />
+        <Route path="/sites/:siteId/edit" element={<EditPage />} />
+      </Route>
+    </Routes>
+  )
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <SplashPage>
       <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<GuestRoute>
-            <Login />
-          </GuestRoute>} />
-          <Route path="/signup" element={<GuestRoute>
-            <Signup />
-          </GuestRoute>} />
-          <Route path="/" element={<AuthenticatedLayout />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/add-new-site" element={<AddNewSite />} />
-            <Route path="/sites/:siteId/edit" element={<EditPage />} />
-          </Route>
-        </Routes>
+        <App />
       </BrowserRouter>
     </SplashPage>
   </StrictMode>

@@ -1,11 +1,11 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { entity, type Site } from '../entities/site'
-import apiValidateAuthCookie from '../utils/apiValidateAuthCookie'
 import type { User } from 'lucia'
 import { createMiddleware } from 'hono/factory'
 import { entity as userEntity } from "../entities/user"
 import { zValidator } from '@hono/zod-validator'
+import apiAuthenticateRequest from '../utils/apiAuthenticateRequest'
 
 function protectSiteRecordMiddleware(failedMessage: string) {
     return createMiddleware(async (c, next) => {
@@ -45,7 +45,7 @@ const sites = new Hono<{
     }
 }>()
     // protect these routes
-    .use(apiValidateAuthCookie)
+    .use(apiAuthenticateRequest)
     // sites targeting specific site inject site record to site var
     .use("/:siteId/*", setSiteRecordMiddleware)
     .get(

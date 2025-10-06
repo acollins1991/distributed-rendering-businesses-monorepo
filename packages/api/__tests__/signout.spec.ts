@@ -1,7 +1,7 @@
 import { describe, test, expect, beforeAll } from "bun:test"
 import { type User } from "../entities/user"
 import createUserFactory from "../factories/User"
-import validateBearerToken from "../utils/validateAuthCookie"
+import validateBearerToken from "../utils/validateAuthToken"
 import type { Session } from "lucia"
 import ApiRequestFactory from "../factories/ApiRequest"
 

@@ -1,1 +1,0 @@
-export const tokenCookieName = 'friendly_sites_auth_cookie'

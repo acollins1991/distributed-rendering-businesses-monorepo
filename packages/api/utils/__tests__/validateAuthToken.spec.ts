@@ -4,9 +4,9 @@ import { entity } from "../../entities/user"
 import { faker } from "@faker-js/faker"
 import { auth } from "../../auth"
 import { add } from "date-fns"
-import validateBearerToken from "../validateAuthCookie"
+import validateAuthToken from "../validateAuthToken"
 
-describe("validateBearerToken", () => {
+describe("validateAuthToken", () => {
     let databaseUser: DatabaseUser
     let databaseSession: Awaited<ReturnType<typeof auth.createSession>>
 
@@ -36,15 +36,15 @@ describe("validateBearerToken", () => {
         })
     })
 
-    test("good bearer token returns session and user", async () => {
-        const { valid, session, user } = await validateBearerToken(databaseSession.id)
+    test("good auth token returns session and user", async () => {
+        const { valid, session, user } = await validateAuthToken(databaseSession.id)
         expect(valid).toBe(true)
         expect(session).toBeTruthy()
         expect(user?.id).toBe(databaseUser.id)
     })
 
     test("bad bearer token returns null session and user", async () => {
-        const { valid, session, user } = await validateBearerToken(crypto.randomUUID())
+        const { valid, session, user } = await validateAuthToken(crypto.randomUUID())
         expect(valid).toBe(false)
         expect(session).toBe(null)
         expect(user).toBe(null)

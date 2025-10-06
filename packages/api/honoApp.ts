@@ -8,13 +8,14 @@ import user from './routes/user'
 import { logger } from 'hono/logger'
 import { cors } from "hono/cors"
 
-import authenticate from './routes/authenticate'
 import editor from './routes/editor'
 
 // required for rpc client
 const app = new Hono()
     .use(cors({
         origin: ["http://localhost:8080", "http://127.0.0.1:8080"],
+        allowHeaders: ['Set-Cookie'],
+        exposeHeaders: ['Set-Cookie'],
         credentials: true
     }))
     .use(logger())
@@ -27,7 +28,6 @@ const app = new Hono()
     .route('/signin', signin)
     .route("/signout", signout)
     .route("/passwordreset", resetpassword)
-    .route("/authenticate", authenticate)
 
 // if( process.env.NODE_ENV === 'test' ) {
 //     app.use(logger())

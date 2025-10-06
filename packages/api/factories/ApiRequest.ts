@@ -1,11 +1,9 @@
 import { handler } from "../handler";
-import { app } from "../honoApp";
-import { tokenCookieName } from "../utils/authCookieName";
 import createUserFactory from "./User";
 
 type HandlerEvent = Parameters<typeof handler>[0]
 
-function createEvent(endpoint: string, body: Object, method: 'GET' | 'POST' | 'PATCH' | 'DELETE', cookie: string) {
+function createEvent(endpoint: string, body: Object, method: 'GET' | 'POST' | 'PATCH' | 'DELETE', authToken: string) {
 
     const url = new URL(endpoint)
     const stringifiedBody = body || null
@@ -26,7 +24,7 @@ function createEvent(endpoint: string, body: Object, method: 'GET' | 'POST' | 'P
             }
         },
         "headers": {
-            "Cookie": cookie,
+            "Authorization": authToken ? `Bearer ${authToken}` : null,
             "Content-Type": "application/json",
             "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
             "accept-encoding": "gzip, deflate, br",
@@ -53,7 +51,7 @@ function createEvent(endpoint: string, body: Object, method: 'GET' | 'POST' | 'P
 export default class ApiRequestFactory {
 
     private config: RequestInit;
-    private cookie: string | null;
+    private authToken: string | null;
     endpoint: string;
     user?: Awaited<ReturnType<typeof createUserFactory>>["user"]
     session?: Awaited<ReturnType<typeof createUserFactory>>["session"]
@@ -75,7 +73,7 @@ export default class ApiRequestFactory {
 
         this.promises = []
 
-        this.cookie = null
+        this.authToken = null
     }
 
     get post() {
@@ -100,14 +98,14 @@ export default class ApiRequestFactory {
 
     addAuthSession() {
         this.promises.push(createUserFactory().then(({ user, session }) => {
-            this.cookie = session.id
+            this.authToken = session.id
             this.user = user
         }))
         return this
     }
 
     setAuthSession(token: string) {
-        this.cookie = token
+        this.authToken = token
         return this
     }
 
@@ -117,12 +115,7 @@ export default class ApiRequestFactory {
             await Promise.all(this.promises)
         }
 
-        // add auth cookie
-        if (this.cookie) {
-            this.config.headers['Cookie'] = `${tokenCookieName}=${this.cookie}`
-        }
-
-        const event = createEvent(`http://localhost:3000/${this.endpoint}`, this.config.body, this.config.method, this.config.headers['Cookie'])
+        const event = createEvent(`http://localhost:3000/${this.endpoint}`, this.config.body, this.config.method, this.authToken)
 
         // return app.request(this.endpoint, this.config)
         return handler(event)
