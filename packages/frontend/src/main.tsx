@@ -18,6 +18,8 @@ import AppLoadingPage from './components/AppLoadingPage.tsx';
 import AddNewSite from './views/AddNewSite.tsx';
 import AuthenticatedLayout from './layouts/AuthenticatedLayout.tsx';
 import EditPage from './views/EditPage.tsx';
+import Signup from './views/Signup.tsx';
+import { GuestRoute } from './components/GuestRoute.tsx';
 
 const SplashPage = ({ children }: { children: JSX.Element }) => {
 
@@ -28,16 +30,17 @@ const SplashPage = ({ children }: { children: JSX.Element }) => {
   const token = useUserStore(state => state.token)
 
   useEffect(() => {
+    console.log(token, isLoading)
     setTimeout(() => {
       if (token) {
         setUser(token)
       } else if (window.location.href !== `${location.origin}/login`) {
         window.location.href = `${location.origin}/login`
       }
-    }, 1250)
-    setIsLoading(false)
-  }, [isAuthenticated])
 
+      setIsLoading(false)
+    }, 1250)
+  }, [token])
 
   return <>
     {isLoading ? <AppLoadingPage /> : children}
@@ -49,12 +52,17 @@ createRoot(document.getElementById('root')!).render(
     <SplashPage>
       <BrowserRouter>
         <Routes>
-          <Route path="/login" element={<Login />} />
+          <Route path="/login" element={<GuestRoute>
+            <Login />
+          </GuestRoute>} />
+          <Route path="/signup" element={<GuestRoute>
+            <Signup />
+          </GuestRoute>} />
           <Route path="/" element={<AuthenticatedLayout />}>
-              <Route path="/" element={<Home />} />
-              <Route path="/add-new-site" element={<AddNewSite />} />
-              <Route path="/sites/:siteId/edit" element={<EditPage />} />
-            </Route>
+            <Route path="/" element={<Home />} />
+            <Route path="/add-new-site" element={<AddNewSite />} />
+            <Route path="/sites/:siteId/edit" element={<EditPage />} />
+          </Route>
         </Routes>
       </BrowserRouter>
     </SplashPage>

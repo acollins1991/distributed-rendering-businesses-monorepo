@@ -8,7 +8,7 @@ type HandlerEvent = Parameters<typeof handler>[0]
 function createEvent(endpoint: string, body: Object, method: 'GET' | 'POST' | 'PATCH' | 'DELETE', cookie: string) {
 
     const url = new URL(endpoint)
-    const stringifiedBody = body ? JSON.stringify(body) : undefined
+    const stringifiedBody = body || null
 
     return {
         "resource": url.pathname,

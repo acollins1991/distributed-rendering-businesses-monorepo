@@ -7,18 +7,17 @@ import { add } from 'date-fns'
 import validatePassword from '../utils/validatePassword'
 import { zValidator } from '@hono/zod-validator'
 import setAuthCookie from '../utils/setAuthCookie'
-import { parseStringifiedToZod } from '../utils/parseStringifiedToZod'
 
 const signup = new Hono()
 
 signup.post(
     "/",
-    zValidator("json", parseStringifiedToZod(z.object({
+    zValidator("json", z.object({
         first_name: z.string(),
         last_name: z.string(),
         email: z.string(),
         password: z.string()
-    }))),
+    })),
     async (c) => {
 
         const {

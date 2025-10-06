@@ -4,13 +4,11 @@ import FormInput from './FormInput'
 import { useUserStore } from '../stores/user'
 import { useNavigate } from 'react-router-dom'
 
-export default function AppLoginForm({ signUpButtonHandler }: { signUpButtonHandler: Function }) {
+export default function AppLoginForm() {
 
     const [isBusy, setIsBusy] = useState(false)
 
     const formHandler: FormEventHandler<HTMLFormElement> = async (event: Event) => {
-
-        console.log('testingdsoifjsadfoiaj')
 
         event.preventDefault()
 
@@ -35,11 +33,10 @@ export default function AppLoginForm({ signUpButtonHandler }: { signUpButtonHand
 
     const isAuthenticated = useUserStore((state) => state.isAuthenticated)
     const navigate = useNavigate()
-    useEffect(() => {
-        if( isAuthenticated ) {
-            navigate('/')
-        }
-    }, [isAuthenticated])
+
+    function signUpButtonHandler() {
+        navigate('/signup')
+    }
 
     return (
         <>

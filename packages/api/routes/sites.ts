@@ -6,7 +6,6 @@ import type { User } from 'lucia'
 import { createMiddleware } from 'hono/factory'
 import { entity as userEntity } from "../entities/user"
 import { zValidator } from '@hono/zod-validator'
-import { parseStringifiedToZod } from '../utils/parseStringifiedToZod'
 
 function protectSiteRecordMiddleware(failedMessage: string) {
     return createMiddleware(async (c, next) => {
@@ -71,9 +70,9 @@ sites.get(
 // /sites POST
 sites.post(
     "/",
-    zValidator("json", parseStringifiedToZod(z.object({
+    zValidator("json", z.object({
         name: z.string()
-    }))),
+    })),
     async (c) => {
         const { name } = c.req.valid("json")
 
@@ -100,9 +99,9 @@ sites.post(
 // /sites PATCH
 sites.patch(
     "/:siteId",
-    zValidator("json", parseStringifiedToZod(z.object({
+    zValidator("json", z.object({
         name: z.string().optional()
-    }).partial())),
+    }).partial()),
     protectSiteRecordMiddleware('User cannot edit site record'),
     async (c) => {
 

@@ -26,11 +26,11 @@ user.get(
 
 user.patch(
     "/",
-    zValidator("json", z.string().transform(value => JSON.parse(value)).pipe(z.object({
+    zValidator("json", z.object({
         first_name: z.string(),
         last_name: z.string(),
         email: z.string()
-    }).partial())),
+    }).partial()),
     apiValidateAuthCookie,
     async (c) => {
 

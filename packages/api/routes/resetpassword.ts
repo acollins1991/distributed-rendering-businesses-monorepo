@@ -5,17 +5,15 @@ import { entity as resetTokenEntity } from "../entities/resettoken";
 import validatePassword from "../utils/validatePassword";
 import { auth } from "../auth";
 import { zValidator } from '@hono/zod-validator'
-import { parseStringifiedToZod } from "../utils/parseStringifiedToZod";
-
 const resetpassword = new Hono()
 
 resetpassword.post(
     "/",
     zValidator(
         'json',
-        parseStringifiedToZod(z.object({
+        z.object({
             email: z.string()
-        }))
+        })
     ),
     async (c) => {
         const { email } = c.req.valid("json");
@@ -43,9 +41,9 @@ resetpassword.patch(
     "/:resetTokenId",
     zValidator(
         'json',
-        parseStringifiedToZod(z.object({
+        z.object({
             password: z.string()
-        }))
+        })
     ),
     async (c) => {
         const {

@@ -1,13 +1,14 @@
-import { useEffect, useState, type FormEventHandler } from 'react'
+import { useState, type FormEventHandler } from 'react'
 import { client } from '../utils/useApi'
 import FormInput from './FormInput'
 import { useUserStore } from '../stores/user'
 import { useNavigate } from 'react-router-dom'
 
-export default function AppSignUpForm({ signInButtonHandler }: { signInButtonHandler: Function }) {
+export default function AppSignUpForm() {
 
     const [isBusy, setIsBusy] = useState(false)
     const setUser = useUserStore((state) => state.setUser)
+    const navigate = useNavigate()
 
     const formHandler: FormEventHandler<HTMLFormElement> = async (event) => {
 
@@ -26,12 +27,15 @@ export default function AppSignUpForm({ signInButtonHandler }: { signInButtonHan
                 json: details
             })
             setUser(res.token)
-            // console.log(user)
         } catch (e) {
             console.log(e)
         } finally {
             setIsBusy(false)
         }
+    }
+
+    function signInButtonHandler() {
+        navigate('/login')
     }
 
     return (

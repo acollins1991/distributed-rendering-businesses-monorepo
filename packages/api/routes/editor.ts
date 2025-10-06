@@ -30,7 +30,7 @@ editor.post(
         const site = c.get("site")
         const project_data = await c.req.json()
 
-        const { data: { grapejs_project_data } } = await updateGrapeJsProjectData(site.siteId, JSON.parse(project_data))
+        const { data: { grapejs_project_data } } = await updateGrapeJsProjectData(site.siteId, project_data)
 
         try {
             return c.json(grapejs_project_data, 200)
